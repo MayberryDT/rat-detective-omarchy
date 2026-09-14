@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "co.animasai.rat-detective",
-  "version": "1.1.0",
-  "contentHash": "d9ca5516a4faa336df4386461186c47eeeb2f0b9f6aa7962eac5ed72031ee45d",
+  "version": "1.1.1",
+  "contentHash": "74704ca694993b98aa828615f2f217c4d2bf19e0fb398ae41feaa547d702705a",
   "files": {
     ".github/workflows/validate.yml": {
       "sha256": "69cc497deb6393ae348c28ea076b62a688ddd5b26c610d3bf1747a2331f4386d",
@@ -33,19 +33,23 @@
       "executable": false
     },
     "assets/rat-detective-symbolic.svg": {
-      "sha256": "3b19042b1f889961ef77da08c6ca4a0593009ee91b9812e83629b2078bf8e42e",
+      "sha256": "24d8a9f90613f1280b5289381b6f3b6887d8f8c330df88c2f262f3f89ca3af67",
       "executable": false
     },
     "assets/README.md": {
-      "sha256": "b1558edab6814ff22995256a3d7cdaa4c67f4a105994cb15e02a91c9494145f3",
+      "sha256": "f28bab75b3fdee143077cb948003d41913401a845aa1c0d16b5c2481409ed985",
       "executable": false
     },
     "BarWidget.qml": {
-      "sha256": "c34198f4878a3525abed9e9433d155c48827fcb01e6412a64153e237d36aa229",
+      "sha256": "77f90afbcda352cac603c82924b3c3d7f8f27b388a8ff90d692ca718afa03137",
       "executable": false
     },
     "components/DispatchAppearance.qml": {
       "sha256": "3756a5499c2baa51532b09e21aff6df83e3ff5795bb30808d8e252b7b0194e0c",
+      "executable": false
+    },
+    "components/DispatchBarMetrics.qml": {
+      "sha256": "aa4e276891f6115b2d19e4fa572bc3b7174489631fc3b3af7be335f192ee901a",
       "executable": false
     },
     "components/DispatchProgressRow.qml": {
@@ -73,7 +77,7 @@
       "executable": false
     },
     "manifest.json": {
-      "sha256": "bf9493be852a1f8516257ede833287bf2b9fef60318da68ce43b4dda6caeac71",
+      "sha256": "c7a416c839711aec099d762c14407883fdd81a640771039d0b35bade92acaadd",
       "executable": false
     },
     "Panel.qml": {
@@ -85,7 +89,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "3c1bf44f5406972aee0723b7242c41f40f18b454d7ac64280eb6f39af738b46a",
+      "sha256": "f66a74a349ecdfa7a01148701db0a2b8fe248f34ce842dcf3a90e9e5c4756044",
       "executable": false
     },
     "scripts/install-webapp.sh": {
@@ -126,6 +130,10 @@
     },
     "tests/qml/stubs/qs/Commons/Style.qml": {
       "sha256": "716383f9c662b27fb03c5f5c82027e454c707d45784229e5d07009b9d10f922b",
+      "executable": false
+    },
+    "tests/qml/tst_barmetrics.qml": {
+      "sha256": "df7713b8d2da7ae8efcb892a3c95a3563bf57fc415d7f0b575d866728e7af571",
       "executable": false
     },
     "tests/qml/tst_dispatchappearance.qml": {

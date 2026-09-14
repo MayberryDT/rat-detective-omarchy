@@ -60,8 +60,13 @@ share the same layout; the bar and outside popup frame retain your native theme.
 The choice saves on this widget and applies immediately without changing your
 global theme or restarting the game, recording or service.
 
-The badge comes from the game. The symbolic rat-head icon is drawn for small bar
-sizes. Fonts are bundled locally under the SIL Open Font License; see
+The badge comes from the game. The symbolic rat-head icon is the selected angular
+profile A, implemented as a clean, theme-tinted SVG. It uses the host bar icon
+canvas and thickness, stacks its count on vertical bars, and rasterizes at the
+current display scale. The widget supports stock and custom Omarchy 4 bars that
+implement the standard bar-widget API. Stock Omarchy and the custom bar were
+checked in all four positions; layout tests cover 16–64px thickness and 1×–3×
+scales. This QML plugin does not target legacy Waybar. Fonts are bundled locally under the SIL Open Font License; see
 [asset credits](assets/README.md). No fonts are downloaded at runtime.
 
 ## Desktop controls

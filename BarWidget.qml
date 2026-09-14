@@ -3,6 +3,7 @@ import QtQuick.Effects
 import qs.Commons
 import qs.Ui
 import "ServiceBridge.js" as ServiceBridge
+import "components"
 
 BarWidget {
   id: root
@@ -92,30 +93,46 @@ BarWidget {
     labelVisible: false
     active: root.stateName === "live" && root.humanCount > 0
     dimmed: root.stateName === "loading" || root.stateName === "unavailable" || root.stateName === "stale"
-    fixedWidth: root.vertical ? -1 : Math.max(Style.bar.iconSlot, Math.ceil(barContent.implicitWidth + Style.space(10)))
+    foreground: root.bar && root.bar.barForeground !== undefined ? root.bar.barForeground : Color.bar.text
+    activeColor: root.bar && root.bar.urgent !== undefined ? root.bar.urgent : Color.urgent
+    fontFamily: root.bar && root.bar.fontFamily ? root.bar.fontFamily : Style.font.family
+    fixedWidth: root.vertical ? -1 : Math.max(Style.bar.iconSlot, Math.ceil(metrics.slotWidth))
+    fixedHeight: root.vertical ? Math.ceil(metrics.slotHeight) : -1
     tooltipText: root.tooltip
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.MiddleButton && root.dispatchService) root.dispatchService.refresh()
       else if (buttonCode === Qt.LeftButton || buttonCode === Qt.RightButton) root.toggle()
     }
 
+    DispatchBarMetrics {
+      id: metrics
+      vertical: root.vertical
+      thickness: root.bar && root.bar.barSize > 0 ? root.bar.barSize : Style.bar.sizeHorizontal
+      requestedIconSize: Style.bar.iconCanvas
+      countWidth: count.implicitWidth
+      countHeight: count.implicitHeight
+      padding: Style.space(3)
+      gap: Style.space(3)
+      devicePixelRatio: Screen.devicePixelRatio
+    }
+
     Item {
       id: barContent
       anchors.centerIn: parent
-      implicitWidth: root.vertical ? Style.space(22) : symbol.width + count.implicitWidth + Style.space(4)
-      implicitHeight: root.vertical ? Style.space(22) : Math.max(symbol.height, count.implicitHeight)
+      implicitWidth: metrics.contentWidth
+      implicitHeight: metrics.contentHeight
       width: implicitWidth
       height: implicitHeight
 
       Image {
         id: symbol
-        width: root.vertical ? Style.space(18) : Style.space(17)
+        width: metrics.iconSize
         height: width
-        anchors.left: parent.left
-        anchors.verticalCenter: parent.verticalCenter
+        x: root.vertical ? (parent.width - width) / 2 : 0
+        y: root.vertical ? 0 : (parent.height - height) / 2
         source: Qt.resolvedUrl("assets/rat-detective-symbolic.svg")
-        sourceSize.width: Math.round(width * Screen.devicePixelRatio)
-        sourceSize.height: Math.round(height * Screen.devicePixelRatio)
+        sourceSize.width: metrics.rasterSize
+        sourceSize.height: metrics.rasterSize
         fillMode: Image.PreserveAspectFit
         smooth: true
         mipmap: true
@@ -133,13 +150,20 @@ BarWidget {
 
       Text {
         id: count
-        anchors.right: parent.right
-        y: root.vertical ? parent.height - implicitHeight : (parent.height - implicitHeight) / 2
+        x: root.vertical ? 0 : symbol.width + metrics.gap
+        y: root.vertical ? symbol.height + metrics.gap : (parent.height - height) / 2
+        width: root.vertical ? parent.width : implicitWidth
+        height: root.vertical ? implicitHeight : Math.min(implicitHeight, metrics.innerThickness)
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        fontSizeMode: Text.Fit
+        minimumPixelSize: 6
+        elide: Text.ElideRight
         textFormat: Text.PlainText
         text: root.countLabel
         color: button.active && button.useActiveColor ? button.activeColor : button.foreground
         font.family: button.fontFamily
-        font.pixelSize: root.vertical ? Math.max(8, Style.font.caption - 1) : Style.font.body
+        font.pixelSize: root.vertical ? Style.font.caption : Style.font.body
         font.bold: true
         renderType: Text.NativeRendering
       }
