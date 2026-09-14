@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "co.animasai.rat-detective",
+  "version": "1.0.0",
+  "contentHash": "fb35be376d6c82e3cd594914b473815eec5175159bd7ee7ede1b2f5428374b13",
+  "files": {
+    ".github/workflows/validate.yml": {
+      "sha256": "b64f106527a1724d3f8242714450de16598a838ef8318c6b3f6525121e6e03dc",
+      "executable": false
+    },
+    "BarWidget.qml": {
+      "sha256": "29515075d55f924332710d04822481e7f3f9cf4fe78f5ba10f954bbc6d3e952f",
+      "executable": false
+    },
+    "components/DispatchProgressRow.qml": {
+      "sha256": "d160b10100d4a372b2eaf7658cdbebf53abee235c17e83135d82144500bee347",
+      "executable": false
+    },
+    "components/DispatchStateBadge.qml": {
+      "sha256": "008464db7e3938962a51654ea12e8c2160eadc496ca94077d9e50215e9b8dfde",
+      "executable": false
+    },
+    "components/DispatchStepper.qml": {
+      "sha256": "7c172600244e7c100999cca893b7b2738f24dc28ffb49d1f01a67e5e3c59f34c",
+      "executable": false
+    },
+    "fixtures/dispatch.json": {
+      "sha256": "a3c595996548a2993942b261a8bb5a4d7f8498891a5d4b3af82b83935f103037",
+      "executable": false
+    },
+    "icon.png": {
+      "sha256": "94df732ee1399b66344699a1297c61797604fc65d4a83d515008e7ad1e6b33a0",
+      "executable": false
+    },
+    "LICENSE": {
+      "sha256": "ff00f65d4f912b480afbe612afbf013a683501e4b89845167825e25d0a2b1295",
+      "executable": false
+    },
+    "manifest.json": {
+      "sha256": "a8b2e0174603030e52b4627ce5e4e52b92b1b674ada84d36040a71c7092c971a",
+      "executable": false
+    },
+    "Panel.qml": {
+      "sha256": "e4cd659a168ea11179e7c733cc0429604dd152d60392f4c820f0d779f9751eec",
+      "executable": false
+    },
+    "preview.png": {
+      "sha256": "536620d14f702f47eae0070b0388170163613a15a8f6e7fc54f0a30bd1d84264",
+      "executable": false
+    },
+    "README.md": {
+      "sha256": "df7f920900d153d86ace07db1a5bb7186e1f047397a0ddf6e19c21cf31237610",
+      "executable": false
+    },
+    "scripts/install-webapp.sh": {
+      "sha256": "f4f7f8e8a95530b5f14e773dac10b7d93bfbebcfb79a20a0d08d1eb606983519",
+      "executable": true
+    },
+    "scripts/rat-detective-desktop.py": {
+      "sha256": "bf0228d0016e4b500e3378bce62eac53e05ae04b00ea306bd5960188bc092051",
+      "executable": true
+    },
+    "scripts/rollback-webapp.sh": {
+      "sha256": "fb8d85f9271fba5021ffe496ecc5a48dda938ac4ff0b04fafa28ca9f86d3b279",
+      "executable": true
+    },
+    "scripts/uninstall-webapp.sh": {
+      "sha256": "843a5ace8b65ae2d012e71a9883cac8a06f59fe793143b62d229754e725d1f5a",
+      "executable": true
+    },
+    "Service.qml": {
+      "sha256": "cc19fbad96db01c73468f067372d3620e7e67a67e3db80ebc49f38208412cc12",
+      "executable": false
+    },
+    "ServiceBridge.js": {
+      "sha256": "edb43ecfabfb99d0f64ca6d81abfc2e9685d091db6aa02eec460b2e151d609ed",
+      "executable": false
+    },
+    "StatusModel.js": {
+      "sha256": "e77d1a7f51353b531814f837627a9e668296f12069b59caf692fc17e195fbdcf",
+      "executable": false
+    }
+  }
+}
