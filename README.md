@@ -6,10 +6,11 @@ the companion shows city activity and handles desktop conveniences.
 
 ![Dispatch desk showing a static Paper Chase fixture](preview.png)
 
-*Static fixture on Omarchy 4.0.3; no gameplay is running in this preview.*
+*Rat Detective appearance, static fixture on Omarchy 4.0.3; no gameplay is running in this preview. Omarchy appearance is the default.*
 
 ## What it does
 
+- Follows your Omarchy theme by default, with an optional Rat Detective noir appearance.
 - Shows active public rooms and the current Dispatch Assignment.
 - Displays paperwork deliveries, zone points, qualifying case kills or the Closing
   Time clock. Combat totals stay secondary.
@@ -48,6 +49,20 @@ Source development stays in the game's `omarchy/plugin/` directory. Published
 releases are reproducible exports; `release.json` records hashes of packaged files.
 The game repository's `scripts/omarchy-release.mjs` also supports staged local
 installation and rollback for development or migration from a manual folder copy.
+
+## Appearance
+
+Open **Preferences → Appearance** and choose **Omarchy** or **Rat Detective**.
+Omarchy is the default, including existing installations. It follows your live
+popup colors and shell font. Rat Detective uses midnight purple, lavender and
+brass, with the game’s Bangers display lettering and Outfit body text. Both modes
+share the same layout; the bar and outside popup frame retain your native theme.
+The choice saves on this widget and applies immediately without changing your
+global theme or restarting the game, recording or service.
+
+The badge comes from the game. The symbolic rat-head icon is drawn for small bar
+sizes. Fonts are bundled locally under the SIL Open Font License; see
+[asset credits](assets/README.md). No fonts are downloaded at runtime.
 
 ## Desktop controls
 
@@ -102,3 +117,24 @@ companion endpoint. Public summaries contain no positions or reconnect credentia
 Polling the city directory does not start gameplay, reserve slots or create bots.
 
 [Game source and implementation evidence](https://github.com/MayberryDT/rat-detective-online)
+
+## Tests, previews and support
+
+Run `tests/run` from a fresh checkout (Node.js 22+, Python 3 and Bash). These
+portable checks cover normalized room data, clocks, freshness and alert policy;
+they never launch a browser or record the desktop. Live QML checks require the
+installed Omarchy imports and are documented in the release notes.
+Run `tests/run-qml` with Qt 6 QtQuick/QtTest installed to check the actual
+appearance component against narrow, mutable native-role stubs.
+
+For a deterministic visual inspection, use `omarchy-shell
+co.animasai.rat-detective fixture paper` and then `open` on the same target.
+Fixtures include `paper`, `jurisdiction`, `excessive`, `closing`, `empty`, `stale`,
+`unavailable` and `loading`. They are labeled STATIC PREVIEW and suppress desktop
+actions and alerts. Always clear the fixture with `fixture ""` and close the panel
+afterward. Capture only the panel on an empty workspace.
+
+[Report an issue](https://github.com/MayberryDT/rat-detective-omarchy/issues).
+For sensitive security reports, use the repository's private vulnerability
+reporting channel when available; do not include credentials or private captures
+in public issues. Static validation is not a security audit.

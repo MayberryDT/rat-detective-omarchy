@@ -1,23 +1,59 @@
 {
   "schemaVersion": 1,
   "id": "co.animasai.rat-detective",
-  "version": "1.0.0",
-  "contentHash": "fb35be376d6c82e3cd594914b473815eec5175159bd7ee7ede1b2f5428374b13",
+  "version": "1.1.0",
+  "contentHash": "d9ca5516a4faa336df4386461186c47eeeb2f0b9f6aa7962eac5ed72031ee45d",
   "files": {
     ".github/workflows/validate.yml": {
-      "sha256": "b64f106527a1724d3f8242714450de16598a838ef8318c6b3f6525121e6e03dc",
+      "sha256": "69cc497deb6393ae348c28ea076b62a688ddd5b26c610d3bf1747a2331f4386d",
+      "executable": false
+    },
+    "assets/badge.webp": {
+      "sha256": "422ce048e53c0b3a7fc890e6698aaae8540fc033d82fabd31a4868032388da26",
+      "executable": false
+    },
+    "assets/fonts/Bangers-OFL.txt": {
+      "sha256": "01f0dea3bc499f7fcc471577fe3a8d7df6e74e6b456d2228b767a239740811ae",
+      "executable": false
+    },
+    "assets/fonts/Bangers-Regular.ttf": {
+      "sha256": "4160a7311de9342674cce9160cde9fcbb30f48190397d86ff1b70b455af65824",
+      "executable": false
+    },
+    "assets/fonts/Outfit-Bold.ttf": {
+      "sha256": "f620b69582e06d7e1b3bbde74ed8c5876eadabb038390780db2a3414a1490197",
+      "executable": false
+    },
+    "assets/fonts/Outfit-OFL.txt": {
+      "sha256": "c676351bf8576b9aba743cd5eaa8c0e7ee0d51f805d720447b4df4ddb6a2e416",
+      "executable": false
+    },
+    "assets/fonts/Outfit-Regular.ttf": {
+      "sha256": "3b64ac4f6ab6a8eebddd4b0bc03c811c43602e11e176382ab0ee6be615ab861b",
+      "executable": false
+    },
+    "assets/rat-detective-symbolic.svg": {
+      "sha256": "3b19042b1f889961ef77da08c6ca4a0593009ee91b9812e83629b2078bf8e42e",
+      "executable": false
+    },
+    "assets/README.md": {
+      "sha256": "b1558edab6814ff22995256a3d7cdaa4c67f4a105994cb15e02a91c9494145f3",
       "executable": false
     },
     "BarWidget.qml": {
-      "sha256": "29515075d55f924332710d04822481e7f3f9cf4fe78f5ba10f954bbc6d3e952f",
+      "sha256": "c34198f4878a3525abed9e9433d155c48827fcb01e6412a64153e237d36aa229",
+      "executable": false
+    },
+    "components/DispatchAppearance.qml": {
+      "sha256": "3756a5499c2baa51532b09e21aff6df83e3ff5795bb30808d8e252b7b0194e0c",
       "executable": false
     },
     "components/DispatchProgressRow.qml": {
-      "sha256": "d160b10100d4a372b2eaf7658cdbebf53abee235c17e83135d82144500bee347",
+      "sha256": "7cf86e9a1c957676646e893c40f52471e8cd81b5fec915c9d6bef3ea5e3386ec",
       "executable": false
     },
     "components/DispatchStateBadge.qml": {
-      "sha256": "008464db7e3938962a51654ea12e8c2160eadc496ca94077d9e50215e9b8dfde",
+      "sha256": "02582c18e61fb1325883d4f5655cb4eeddaa17f7630910ca72c5a680c4dc4963",
       "executable": false
     },
     "components/DispatchStepper.qml": {
@@ -29,7 +65,7 @@
       "executable": false
     },
     "icon.png": {
-      "sha256": "94df732ee1399b66344699a1297c61797604fc65d4a83d515008e7ad1e6b33a0",
+      "sha256": "2d8617860ef0c9060927d3d887f1a752aefec391fe43cd2315eeb55e81deebca",
       "executable": false
     },
     "LICENSE": {
@@ -37,19 +73,19 @@
       "executable": false
     },
     "manifest.json": {
-      "sha256": "a8b2e0174603030e52b4627ce5e4e52b92b1b674ada84d36040a71c7092c971a",
+      "sha256": "bf9493be852a1f8516257ede833287bf2b9fef60318da68ce43b4dda6caeac71",
       "executable": false
     },
     "Panel.qml": {
-      "sha256": "e4cd659a168ea11179e7c733cc0429604dd152d60392f4c820f0d779f9751eec",
+      "sha256": "7fa0b14c3d729ef0f253032573242d6e59f3a3ee7e706479a159fd43627b6654",
       "executable": false
     },
     "preview.png": {
-      "sha256": "536620d14f702f47eae0070b0388170163613a15a8f6e7fc54f0a30bd1d84264",
+      "sha256": "f8c1bd7cc2ce4a9c66a3b1bb51ba5be5a5ef6cad4475590e21f622456d8be9fe",
       "executable": false
     },
     "README.md": {
-      "sha256": "df7f920900d153d86ace07db1a5bb7186e1f047397a0ddf6e19c21cf31237610",
+      "sha256": "3c1bf44f5406972aee0723b7242c41f40f18b454d7ac64280eb6f39af738b46a",
       "executable": false
     },
     "scripts/install-webapp.sh": {
@@ -69,7 +105,7 @@
       "executable": true
     },
     "Service.qml": {
-      "sha256": "cc19fbad96db01c73468f067372d3620e7e67a67e3db80ebc49f38208412cc12",
+      "sha256": "87b53ca61dcb145bd2455a4f932ae5ef56ee2fa5e7b24256cd2e50f29737071d",
       "executable": false
     },
     "ServiceBridge.js": {
@@ -78,6 +114,34 @@
     },
     "StatusModel.js": {
       "sha256": "e77d1a7f51353b531814f837627a9e668296f12069b59caf692fc17e195fbdcf",
+      "executable": false
+    },
+    "tests/qml/stubs/qs/Commons/Color.qml": {
+      "sha256": "ae52ab56ff7f8f24d4447642e8c71173b92c4f7caec87812440aeeb5488b8bc7",
+      "executable": false
+    },
+    "tests/qml/stubs/qs/Commons/qmldir": {
+      "sha256": "94ee6ee8b2d2efe8a6abce9d4a5394958c7862b26b33b009958c1b77dacaf4b1",
+      "executable": false
+    },
+    "tests/qml/stubs/qs/Commons/Style.qml": {
+      "sha256": "716383f9c662b27fb03c5f5c82027e454c707d45784229e5d07009b9d10f922b",
+      "executable": false
+    },
+    "tests/qml/tst_dispatchappearance.qml": {
+      "sha256": "3bc94a48b300e6b872ff18f5fcd62140c913f56535327adef43ff7abf03d8e4b",
+      "executable": false
+    },
+    "tests/run": {
+      "sha256": "322d77ab0f05d9daea23e60e24d7c1df853530ffd7b58ead8c32c774d1b00080",
+      "executable": true
+    },
+    "tests/run-qml": {
+      "sha256": "a240dc861ea6de69e8bd04cb35ab667a73eb42da71a9bb0337f4a9ee3916e077",
+      "executable": true
+    },
+    "tests/status-model.test.mjs": {
+      "sha256": "e4825b4a8e4b9c150516f2be0730d868f21551c28d0c95ded470ee0d9dc7621b",
       "executable": false
     }
   }

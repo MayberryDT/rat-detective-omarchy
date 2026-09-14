@@ -91,8 +91,11 @@ Item {
   }
 
   function applySettings(value) {
+    var previousOpen = openRefreshMs
+    var previousClosed = closedRefreshMs
     settings = value || ({})
-    schedulePoll(100)
+    // Appearance and desktop preferences must not reset the network timer.
+    if (previousOpen !== openRefreshMs || previousClosed !== closedRefreshMs) schedulePoll(100)
   }
 
   function setPanelOpen(value) {
