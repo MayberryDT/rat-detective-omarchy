@@ -4,6 +4,10 @@ A desktop companion for [Rat Detective](https://ratdetective.online/), the brows
 shooter about rats, paperwork and ricocheting cheese. The game runs in your browser;
 the companion shows city activity and handles desktop conveniences.
 
+Version **1.2.0** adds a default full public-room roster, honest live-report
+language, coalesced open refresh, and opt-in alerts that stay quiet until a
+real transition happens.
+
 ![Dispatch desk showing a static Paper Chase fixture](preview.png)
 
 *Rat Detective appearance, static fixture on Omarchy 4.0.3; no gameplay is running in this preview. Omarchy appearance is the default.*
@@ -11,13 +15,21 @@ the companion shows city activity and handles desktop conveniences.
 ## What it does
 
 - Follows your Omarchy theme by default, with an optional Rat Detective noir appearance.
+  The selected angular-profile icon A and bundled fonts are unchanged.
 - Shows active public rooms and the current Dispatch Assignment.
+- Lists up to ten names from the current public report with objective totals and K/D.
+  Long names wrap. Join and the copy, record and capture controls sit below that
+  roster.
 - Displays paperwork deliveries, zone points, qualifying case kills or the Closing
-  Time clock. Combat totals stay secondary.
+  Time clock. Combat totals stay secondary. Room lines report rat counts without a
+  leftover `/16` capacity label.
+- Reports live, last-report, stale and “no active public rooms” instead of a
+  misleading zero. Private fixtures never appear on the public feed, and polling
+  the directory does not wake sleeping rooms.
 - Returns to an existing game window or launches the game. Joining a selected room
   is a separate action that preserves an existing session.
 - Offers optional alerts, recording controls, saved captures and invitation links.
-- Marks unavailable or old information instead of displaying a misleading zero.
+  Alerts stay off until enabled. The panel shows a concise alert status and detail.
 
 Omarchy 4.0.3 is the initial integration target. Python 3, curl, Hyprland and
 Omarchy's supported web-app browser are required. Clipboard actions use wl-copy;
@@ -68,6 +80,30 @@ implement the standard bar-widget API. Stock Omarchy and the custom bar were
 checked in all four positions; layout tests cover 16–64px thickness and 1×–3×
 scales. This QML plugin does not target legacy Waybar. Fonts are bundled locally under the SIL Open Font License; see
 [asset credits](assets/README.md). No fonts are downloaded at runtime.
+
+## Live stats and alerts
+
+Opening the panel requests a city report immediately and coalesces extra open
+refreshes while one is already in flight. Defaults remain 2 seconds open and
+30 seconds closed. Stale reports pause clocks and say when the last report
+arrived.
+
+The public companion feed lists public rooms only. Private playtest fixtures are
+excluded. Reading the directory does not start gameplay, reserve slots or wake
+sleeping rooms.
+
+Dispatch alerts remain opt-in and default off. When enabled, a gathering notice
+uses a per-room human threshold of 2 by default (schema maximum 10, matching
+current production). Assignment-change notices are a separate optional toggle.
+Quiet hours default to 22:00–08:00 local time, with a 15-minute cooldown.
+The first live snapshot and any recovery snapshot are silent, so already-busy
+rooms are not replayed. A new room that later meets the threshold after that
+baseline can still alert. Focused play, system Do Not Disturb and quiet hours
+are checked at delivery time. Failed sends retry a bounded number of times and
+keep their receipts. The panel shows why alerts are watching, paused or off.
+
+Existing local alert, assignment and Do Not Disturb choices are left as the
+user set them. Enabling the plugin or updating it does not flip those settings.
 
 ## Desktop controls
 
@@ -120,6 +156,9 @@ The versioned companion HTTP API is independent of the gameplay WebSocket protoc
 Older servers retain a limited legacy panel; assignment features require the new
 companion endpoint. Public summaries contain no positions or reconnect credentials.
 Polling the city directory does not start gameplay, reserve slots or create bots.
+
+The gathering-threshold schema maximum is 10 to match current production. The
+service still clamps stored values up to 16 so older local data remains readable.
 
 [Game source and implementation evidence](https://github.com/MayberryDT/rat-detective-online)
 

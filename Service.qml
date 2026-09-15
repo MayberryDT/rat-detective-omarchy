@@ -42,6 +42,7 @@ Item {
   property string nextCursor: ""
   property int pageCount: 0
   property var pendingStatus: null
+  property bool refreshPending: false
   property var alertReceipts: ({})
   property bool alertBaselineReady: false
   property var previousFreshStatus: null
@@ -64,9 +65,16 @@ Item {
   readonly property int closedRefreshMs: intSetting("closedRefreshSec", 30, 10, 600) * 1000
   readonly property int staleAfterMs: intSetting("staleAfterSec", 90, 30, 600) * 1000
   readonly property int alertCooldownMs: intSetting("alertCooldownMin", 15, 1, 1440) * 60000
-  readonly property var totals: StatusModel.totals(status)
+  readonly property var totals: StatusModel.displayTotals(status, nowMs, connectionState)
   readonly property var selectedRoom: StatusModel.roomById(status, selectedRoomId)
   readonly property bool selectedRoomFresh: StatusModel.roomFresh(selectedRoom, nowMs)
+  readonly property bool deliveryPending: pendingNotices.length > 0
+  readonly property var alertStatusInfo: {
+    var _tick = [nowMs, connectionState, dnd, gameFocused, desktopReady, locked, effectiveFixture, alertBaselineReady, alertReceipts, alertCooldownMs, settings, pendingNotices]
+    return StatusModel.alertWatchStatus(alertOptions(), nowMs, alertContext(), alertReceipts, alertCooldownMs)
+  }
+  readonly property string alertStatusText: alertStatusInfo.text
+  readonly property string alertStatusDetail: alertStatusInfo.detail
 
   function localPath(url) {
     var value = String(url || "")
@@ -118,7 +126,8 @@ Item {
     desktopStatus.running = false
     desktopAction.running = false
     notifyProcess.running = false
-    pendingNotices = []
+    abortNoticeEffects()
+    refreshPending = false
     actionText = ""
     actionError = ""
     status = null
@@ -139,14 +148,21 @@ Item {
 
   function requestUrl() {
     if (requestKind === "legacy") return legacyUrl
-    var separator = statusUrl.indexOf("?") === -1 ? "?" : "&"
-    var url = statusUrl + separator + "limit=16"
-    if (nextCursor) url += "&cursor=" + encodeURIComponent(nextCursor)
-    return url
+    return StatusModel.companionStatusUrl(statusUrl, nextCursor, 16)
   }
 
   function refresh() {
-    if ((locked && !effectiveFixture) || statusProcess.running || fixtureProcess.running) return
+    var action = StatusModel.refreshAction({
+      locked: locked,
+      fixture: effectiveFixture,
+      requestRunning: statusProcess.running || fixtureProcess.running
+    })
+    if (action === "skip") return
+    if (action === "defer") {
+      refreshPending = true
+      return
+    }
+    refreshPending = false
     pollTimer.stop()
     if (effectiveFixture) {
       if (effectiveFixture === "unavailable") {
@@ -169,11 +185,17 @@ Item {
 
   function schedulePoll(delay) {
     if (locked || effectiveFixture === "loading") return
-    var base = delay === undefined ? (panelOpen ? openRefreshMs : closedRefreshMs) : delay
-    if (failureCount > 0) base = Math.max(base, Math.min(300000, 5000 * Math.pow(2, Math.min(6, failureCount - 1))))
+    var base = StatusModel.pollDelayMs(panelOpen, openRefreshMs, closedRefreshMs, failureCount, delay)
     var jitter = effectiveFixture ? 0 : Math.floor(base * (Math.random() * 0.16 - 0.08))
     pollTimer.interval = Math.max(250, base + jitter)
     pollTimer.restart()
+  }
+
+  function completeRefreshCycle() {
+    var action = StatusModel.finishRefreshAction(refreshPending)
+    refreshPending = false
+    if (action === "start") refresh()
+    else schedulePoll()
   }
 
   function finishSuccess(nextStatus) {
@@ -189,15 +211,15 @@ Item {
     if (!selectedRoomId || !StatusModel.roomById(status, selectedRoomId))
       selectedRoomId = status.rooms.length ? status.rooms[0].id : ""
     updateConnectionState()
-    var recovered = previousState === "stale" || previousState === "unavailable" || previousState === "loading"
-    if (!alertBaselineReady || recovered || connectionState === "stale") {
+    var mode = StatusModel.alertEvaluateMode(alertBaselineReady, previousState, connectionState)
+    if (mode === "baseline") {
       previousFreshStatus = status
       alertBaselineReady = connectionState === "live" || connectionState === "empty"
-    } else if (connectionState === "live" || connectionState === "empty") {
+    } else if (mode === "evaluate") {
       evaluateAlerts(oldFresh, status)
       previousFreshStatus = status
     }
-    schedulePoll()
+    completeRefreshCycle()
   }
 
   function finishFailure(message) {
@@ -207,7 +229,7 @@ Item {
     nowMs = Date.now()
     updateConnectionState()
     alertBaselineReady = false
-    schedulePoll()
+    completeRefreshCycle()
   }
 
   function updateConnectionState() {
@@ -228,31 +250,75 @@ Item {
     return StatusModel.normalizeV1(copy, stamp)
   }
 
-  function evaluateAlerts(previous, current) {
-    if (effectiveFixture) return
-    var options = {
+  function alertOptions() {
+    return {
       alertsEnabled: boolSetting("alertsEnabled", false),
       alertHumanThreshold: intSetting("alertHumanThreshold", 2, 1, 16),
       alertAssignmentChanges: boolSetting("alertAssignmentChanges", false),
       quietStartHour: intSetting("quietStartHour", 22, 0, 23),
       quietEndHour: intSetting("quietEndHour", 8, 0, 23)
     }
-    var events = StatusModel.alertEvents(previous, current, options, nowMs, {
+  }
+
+  function alertContext() {
+    return {
       fresh: connectionState === "live" || connectionState === "empty",
-      gameFocused: !desktopReady || gameFocused,
-      dnd: dnd
-    })
-    var filtered = StatusModel.filterAlertReceipts(events, alertReceipts, nowMs, alertCooldownMs)
+      gameFocused: gameFocused,
+      dnd: dnd,
+      locked: locked && !effectiveFixture,
+      fixture: !!effectiveFixture,
+      baselineReady: alertBaselineReady,
+      desktopReady: desktopReady,
+      connectionState: connectionState,
+      deliveryPending: pendingNotices.length > 0
+    }
+  }
+
+  function persistReceipts() {
+    receiptsFile.setText(JSON.stringify({ version: 1, receipts: alertReceipts }, null, 2) + "\n")
+  }
+
+  function applyNoticeQueue(advanced) {
+    pendingNotices = advanced.queue
+    alertReceipts = advanced.receipts
+    persistReceipts()
+  }
+
+  function evaluateAlerts(previous, current) {
+    if (effectiveFixture) return
+    var events = StatusModel.alertEvents(previous, current, alertOptions(), nowMs, alertContext())
+    var queued = {}
+    for (var i = 0; i < pendingNotices.length; i++) if (pendingNotices[i] && pendingNotices[i].key) queued[pendingNotices[i].key] = true
+    var filtered = StatusModel.filterAlertReceipts(events, alertReceipts, nowMs, alertCooldownMs, queued)
     alertReceipts = filtered.receipts
     if (filtered.events.length) {
-      receiptsFile.setText(JSON.stringify({ version: 1, receipts: alertReceipts }, null, 2) + "\n")
-      pendingNotices = pendingNotices.concat(filtered.events)
+      persistReceipts()
+      pendingNotices = StatusModel.boundedNoticeQueue(pendingNotices.concat(filtered.events), 8)
       runNextNotice()
     }
   }
 
+  function abortNoticeEffects() {
+    noticeRetryTimer.stop()
+    var cleared = StatusModel.clearNoticeEffects(pendingNotices, alertReceipts)
+    pendingNotices = cleared.queue
+    alertReceipts = cleared.receipts
+    persistReceipts()
+  }
+
   function runNextNotice() {
     if (notifyProcess.running || pendingNotices.length === 0) return
+    if (effectiveFixture || fixtureSwitching) {
+      abortNoticeEffects()
+      return
+    }
+    var now = Date.now()
+    nowMs = now
+    if (!StatusModel.noticeDeliverable(alertOptions(), now, alertContext())) {
+      applyNoticeQueue(StatusModel.advanceNoticeQueue(pendingNotices, alertReceipts, "suppressed", now))
+      Qt.callLater(runNextNotice)
+      return
+    }
     var notice = pendingNotices[0]
     notifyProcess.command = [helperPath, "notify", notice.title, notice.body]
     notifyProcess.running = true
@@ -404,9 +470,24 @@ Item {
 
   Process {
     id: notifyProcess
+    stdout: StdioCollector { id: notifyOut; waitForEnd: true }
     onExited: function(code) {
-      root.pendingNotices = root.pendingNotices.slice(1)
-      root.runNextNotice()
+      if (root.fixtureSwitching || root.effectiveFixture) {
+        root.abortNoticeEffects()
+        return
+      }
+      var classified = StatusModel.classifyNotifyResult(code, notifyOut.text)
+      var head = root.pendingNotices.length ? root.pendingNotices[0] : null
+      var result = classified
+      if (classified === "failed") {
+        if (head) head.attempts = (head.attempts || 0) + 1
+        result = head && head.attempts >= 3 ? "suppressed" : "failed"
+      }
+      var now = Date.now()
+      root.nowMs = now
+      root.applyNoticeQueue(StatusModel.advanceNoticeQueue(root.pendingNotices, root.alertReceipts, result, now))
+      if (result === "sent" || result === "suppressed") root.runNextNotice()
+      else noticeRetryTimer.restart()
     }
   }
 
@@ -431,6 +512,15 @@ Item {
   }
 
   Timer { id: pollTimer; repeat: false; onTriggered: root.refresh() }
+  Timer {
+    id: noticeRetryTimer
+    interval: 4000
+    repeat: false
+    onTriggered: {
+      if (root.fixtureSwitching || root.effectiveFixture) return
+      root.runNextNotice()
+    }
+  }
   Timer {
     interval: 1000
     running: true

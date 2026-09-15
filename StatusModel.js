@@ -237,6 +237,58 @@ function totals(status) {
   return { rooms: rooms.length, players: players, humans: humans }
 }
 
+function freshTotals(status, now) {
+  var rooms = status && Array.isArray(status.rooms) ? status.rooms : []
+  var players = 0
+  var humans = 0
+  var count = 0
+  for (var i = 0; i < rooms.length; i++) {
+    if (!roomFresh(rooms[i], now)) continue
+    count++
+    players += boundedInteger(rooms[i].players, 0, 0, 16)
+    humans += boundedInteger(rooms[i].humans, 0, 0, 16)
+  }
+  return { rooms: count, players: players, humans: humans }
+}
+
+function displayTotals(status, now, state) {
+  var all = totals(status)
+  if (state !== "live" && state !== "empty") return all
+  var fresh = freshTotals(status, now)
+  return { rooms: all.rooms, players: fresh.players, humans: fresh.humans }
+}
+
+function companionStatusUrl(baseUrl, cursor, limit) {
+  var base = String(baseUrl || "")
+  var page = boundedInteger(limit, 16, 1, 32)
+  var separator = base.indexOf("?") === -1 ? "?" : "&"
+  var url = base + separator + "limit=" + page
+  var token = boundedString(cursor, "", 256)
+  if (token) url += "&cursor=" + encodeURIComponent(token)
+  return url
+}
+
+function refreshAction(state) {
+  var options = state && typeof state === "object" ? state : {}
+  var fixture = String(options.fixture || "")
+  if (options.locked && !fixture) return "skip"
+  if (options.requestRunning) return "defer"
+  return "start"
+}
+
+function finishRefreshAction(pending) {
+  return pending ? "start" : "schedule"
+}
+
+function pollDelayMs(panelOpen, openMs, closedMs, failureCount, explicitDelay) {
+  var base = explicitDelay === undefined || explicitDelay === null
+    ? (panelOpen ? finite(openMs, 2000) : finite(closedMs, 30000))
+    : finite(explicitDelay, 0)
+  var failures = boundedInteger(failureCount, 0, 0, 8)
+  if (failures > 0) base = Math.max(base, Math.min(300000, 5000 * Math.pow(2, Math.min(6, failures - 1))))
+  return Math.max(250, base)
+}
+
 function roomFresh(room, now) {
   if (!room) return false
   return room.localFreshUntil > 0 ? now <= room.localFreshUntil : now - room.localObservedAt <= 75000
@@ -247,13 +299,17 @@ function connectionState(status, receivedAt, now, staleAfterMs, failed) {
   var rooms = status.rooms || []
   var newestObservation = 0
   var anyFresh = rooms.length === 0
+  var freshPlayers = 0
   for (var i = 0; i < rooms.length; i++) {
     newestObservation = Math.max(newestObservation, rooms[i].localObservedAt || 0)
-    if (roomFresh(rooms[i], now)) anyFresh = true
+    if (roomFresh(rooms[i], now)) {
+      anyFresh = true
+      freshPlayers += boundedInteger(rooms[i].players, 0, 0, 16)
+    }
   }
   var age = Math.max(0, now - (newestObservation || receivedAt || 0))
   if (failed || !anyFresh || age > staleAfterMs) return "stale"
-  return totals(status).players > 0 ? "live" : "empty"
+  return freshPlayers > 0 ? "live" : "empty"
 }
 
 function formatClock(milliseconds) {
@@ -294,10 +350,120 @@ function isQuietHour(now, startHour, endHour) {
   return start < end ? hour >= start && hour < end : hour >= start || hour < end
 }
 
+function formatClockHour(hour) {
+  var value = boundedInteger(hour, 0, 0, 23)
+  return (value < 10 ? "0" : "") + value + ":00"
+}
+
+function receiptEntry(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    var at = finite(value.at, finite(value.sentAt, finite(value.reservedAt, 0)))
+    var reserved = value.state === "reserved" || value.reserved === true
+    return at > 0 ? { at: at, state: reserved ? "reserved" : "sent" } : null
+  }
+  var stamp = finite(value, 0)
+  return stamp > 0 ? { at: stamp, state: "sent" } : null
+}
+
+function receiptState(receipts, key) {
+  var entry = receipts && receiptEntry(receipts[key])
+  return entry ? entry.state : ""
+}
+
+function receiptTime(receipts, key) {
+  var entry = receipts && receiptEntry(receipts[key])
+  return entry ? entry.at : 0
+}
+
+function normalizeReceipts(receipts, now) {
+  var kept = {}
+  var source = receipts && typeof receipts === "object" ? receipts : {}
+  for (var key in source) {
+    var entry = receiptEntry(source[key])
+    if (entry && entry.at > now - 86400000) kept[key] = entry
+  }
+  return kept
+}
+
+function latestReceiptAt(receipts, sentOnly) {
+  var latest = 0
+  var source = receipts && typeof receipts === "object" ? receipts : {}
+  for (var key in source) {
+    var entry = receiptEntry(source[key])
+    if (!entry || (sentOnly && entry.state !== "sent")) continue
+    latest = Math.max(latest, entry.at)
+  }
+  return latest
+}
+
+function alertEvaluateMode(baselineReady, previousState, nextState) {
+  var recovered = previousState === "stale" || previousState === "unavailable" || previousState === "loading"
+  if (!baselineReady || recovered || nextState === "stale") return "baseline"
+  if (nextState === "live" || nextState === "empty") return "evaluate"
+  return "hold"
+}
+
+function alertBlockReason(settings, now, context, receipts, cooldownMs) {
+  var options = settings && typeof settings === "object" ? settings : {}
+  var state = context && typeof context === "object" ? context : {}
+  if (state.fixture) return "fixture"
+  if (options.alertsEnabled !== true) return "disabled"
+  if (state.locked) return "locked"
+  if (state.connectionState === "loading" || state.connectionState === "unavailable" || state.desktopReady === false)
+    return "not-ready"
+  if (state.fresh === false || state.connectionState === "stale") return "stale"
+  if (state.baselineReady === false) return "baseline"
+  if (state.dnd) return "dnd"
+  if (state.gameFocused) return "game-focus"
+  if (isQuietHour(now, options.quietStartHour, options.quietEndHour)) return "quiet"
+  if (state.deliveryPending) return "delivery-pending"
+  var cooldown = Math.max(0, finite(cooldownMs, 0))
+  var latestSent = latestReceiptAt(receipts, true)
+  if (latestSent > 0 && now - latestSent < cooldown) return "cooldown"
+  return ""
+}
+
+function alertStatusCopy(reason, settings) {
+  var options = settings && typeof settings === "object" ? settings : {}
+  var threshold = boundedInteger(options.alertHumanThreshold, 2, 1, 16)
+  var start = formatClockHour(options.quietStartHour === undefined ? 22 : options.quietStartHour)
+  var end = formatClockHour(options.quietEndHour === undefined ? 8 : options.quietEndHour)
+  if (reason === "fixture") return { text: "Alerts paused: preview only", detail: "Static preview suppresses desktop alerts." }
+  if (reason === "disabled") return { text: "Alerts: off", detail: "Dispatch alerts stay off until you enable them." }
+  if (reason === "locked") return { text: "Alerts paused: waiting for unlock", detail: "City reports pause while the session is locked." }
+  if (reason === "not-ready") return { text: "Alerts paused: not ready", detail: "Alerts wait for a live city report before they can fire." }
+  if (reason === "stale") return { text: "Alerts paused: stale report", detail: "Stale reports do not fire notices." }
+  if (reason === "baseline") return { text: "Alerts: establishing baseline", detail: "The first live snapshot is silent so old rooms are not replayed." }
+  if (reason === "dnd") return { text: "Alerts paused: Do not disturb", detail: "System Do Not Disturb is on, so notices stay silent." }
+  if (reason === "game-focus") return { text: "Alerts paused: in game", detail: "Companion alerts stay silent while the game is focused." }
+  if (reason === "quiet") return { text: "Alerts paused: quiet hours", detail: "Quiet hours run from " + start + " to " + end + "." }
+  if (reason === "delivery-pending") return { text: "Alerts paused: waiting to deliver", detail: "A notice is waiting to send. It has not been delivered yet." }
+  if (reason === "cooldown") return { text: "Alerts paused: cooling down", detail: "A notice was sent recently. The next one waits for the cooldown." }
+  return {
+    text: "Alerts: watching the city",
+    detail: options.alertAssignmentChanges === true
+      ? "Notices fire when a fresh room reaches " + threshold + " investigators or a new assignment starts."
+      : "Notices fire when a fresh room reaches " + threshold + " investigators."
+  }
+}
+
+function alertWatchStatus(settings, now, context, receipts, cooldownMs) {
+  return alertStatusCopy(alertBlockReason(settings, now, context, receipts, cooldownMs), settings)
+}
+
+function evaluationBlocked(settings, now, context) {
+  var reason = alertBlockReason(settings, now, context, {}, 0)
+  return reason === "disabled" || reason === "fixture" || reason === "locked" || reason === "not-ready"
+    || reason === "stale" || reason === "dnd" || reason === "game-focus" || reason === "quiet"
+}
+
+function noticeDeliverable(settings, now, context) {
+  var reason = alertBlockReason(settings, now, context, {}, 0)
+  return reason === "" || reason === "cooldown" || reason === "baseline" || reason === "delivery-pending"
+}
+
 function alertEvents(previous, current, settings, now, context) {
-  if (!previous || !current || !settings || settings.alertsEnabled !== true) return []
-  if (context && (context.gameFocused || context.dnd || context.fresh === false)) return []
-  if (isQuietHour(now, settings.quietStartHour, settings.quietEndHour)) return []
+  if (!previous || !current || evaluationBlocked(settings, now, context)) return []
   var threshold = boundedInteger(settings.alertHumanThreshold, 2, 1, 16)
   var before = {}
   var after = {}
@@ -308,13 +474,14 @@ function alertEvents(previous, current, settings, now, context) {
   for (var id in after) {
     var next = after[id]
     var prior = before[id]
-    if (!prior) continue
-    if (prior.humans < threshold && next.humans >= threshold) events.push({
+    if (!roomFresh(next, now)) continue
+    var priorHumans = prior ? prior.humans : 0
+    if (priorHumans < threshold && next.humans >= threshold) events.push({
       key: "gathering:" + id + ":" + next.roundId + ":" + threshold,
       title: "Rats are gathering",
       body: next.humans + " human investigators in " + next.label
     })
-    if (settings.alertAssignmentChanges === true && prior.roundId && next.roundId && prior.roundId !== next.roundId) events.push({
+    if (settings.alertAssignmentChanges === true && prior && prior.roundId && next.roundId && prior.roundId !== next.roundId) events.push({
       key: "assignment:" + id + ":" + next.roundId,
       title: next.assignment.title,
       body: "A new Dispatch Assignment started in " + next.label
@@ -323,22 +490,79 @@ function alertEvents(previous, current, settings, now, context) {
   return events
 }
 
-function filterAlertReceipts(events, receipts, now, cooldownMs) {
-  var kept = {}
-  var source = receipts && typeof receipts === "object" ? receipts : {}
-  for (var key in source) if (finite(source[key], 0) > now - 86400000) kept[key] = source[key]
+function filterAlertReceipts(events, receipts, now, cooldownMs, queuedKeys) {
+  var kept = normalizeReceipts(receipts, now)
+  var queued = queuedKeys && typeof queuedKeys === "object" ? queuedKeys : {}
   var accepted = []
   var cooldown = Math.max(0, finite(cooldownMs, 0))
-  var latest = 0
-  for (var receiptKey in kept) latest = Math.max(latest, finite(kept[receiptKey], 0))
+  var latest = latestReceiptAt(kept, false)
   for (var i = 0; i < events.length; i++) {
     var event = events[i]
-    if (kept[event.key] || (latest > 0 && now - latest < cooldown)) continue
-    kept[event.key] = now
+    if (queued[event.key] || kept[event.key] || (latest > 0 && now - latest < cooldown)) continue
+    kept[event.key] = { at: now, state: "reserved" }
     latest = now
     accepted.push(event)
   }
   return { events: accepted, receipts: kept }
+}
+
+function releaseAlertReceipt(receipts, key) {
+  var next = {}
+  var source = receipts && typeof receipts === "object" ? receipts : {}
+  for (var existing in source) if (existing !== key) next[existing] = source[existing]
+  return next
+}
+
+function releaseReservedReceipts(receipts) {
+  var next = {}
+  var source = receipts && typeof receipts === "object" ? receipts : {}
+  for (var key in source) {
+    var entry = receiptEntry(source[key])
+    if (entry && entry.state === "sent") next[key] = entry
+  }
+  return next
+}
+
+function boundedNoticeQueue(queue, maximum) {
+  var pending = Array.isArray(queue) ? queue.slice() : []
+  var cap = boundedInteger(maximum, 8, 1, 16)
+  return pending.length > cap ? pending.slice(0, cap) : pending
+}
+
+function classifyNotifyResult(code, stdout) {
+  var parsed = null
+  try { parsed = JSON.parse(String(stdout || "").replace(/^\s+|\s+$/g, "")) } catch (error) { parsed = null }
+  if (parsed && typeof parsed === "object") {
+    var action = boundedString(parsed.action, "", 40)
+    if (parsed.ok === true && action === "sent") return "sent"
+    if (parsed.ok === true && (action === "suppressed-dnd" || action === "suppressed-focused" || action.indexOf("suppressed-") === 0))
+      return "suppressed"
+    if (parsed.ok === false || action === "failed") return "failed"
+  }
+  return "failed"
+}
+
+function advanceNoticeQueue(queue, receipts, result, now) {
+  var pending = boundedNoticeQueue(queue, 8)
+  var nextReceipts = normalizeReceipts(receipts, finite(now, 0) || 1)
+  if (!pending.length) return { queue: pending, receipts: nextReceipts }
+  var notice = pending[0]
+  var stamp = finite(now, 0)
+  if (result === "sent") {
+    if (notice && notice.key) nextReceipts[notice.key] = { at: stamp || Date.now(), state: "sent" }
+    return { queue: pending.slice(1), receipts: nextReceipts }
+  }
+  if (result === "failed") {
+    if (notice && notice.key && !receiptEntry(nextReceipts[notice.key]))
+      nextReceipts[notice.key] = { at: stamp || Date.now(), state: "reserved" }
+    return { queue: pending, receipts: nextReceipts }
+  }
+  nextReceipts = releaseAlertReceipt(nextReceipts, notice && notice.key)
+  return { queue: pending.slice(1), receipts: nextReceipts }
+}
+
+function clearNoticeEffects(queue, receipts) {
+  return { queue: [], receipts: releaseReservedReceipts(receipts) }
 }
 
 if (typeof module !== "undefined") {
@@ -350,13 +574,30 @@ if (typeof module !== "undefined") {
     mergePages: mergePages,
     roomById: roomById,
     totals: totals,
+    freshTotals: freshTotals,
+    displayTotals: displayTotals,
+    companionStatusUrl: companionStatusUrl,
+    refreshAction: refreshAction,
+    finishRefreshAction: finishRefreshAction,
+    pollDelayMs: pollDelayMs,
     connectionState: connectionState,
     roomFresh: roomFresh,
     formatClock: formatClock,
     displayRemaining: displayRemaining,
     objectiveLine: objectiveLine,
     isQuietHour: isQuietHour,
+    alertEvaluateMode: alertEvaluateMode,
+    alertWatchStatus: alertWatchStatus,
+    noticeDeliverable: noticeDeliverable,
     alertEvents: alertEvents,
-    filterAlertReceipts: filterAlertReceipts
+    filterAlertReceipts: filterAlertReceipts,
+    receiptState: receiptState,
+    receiptTime: receiptTime,
+    releaseAlertReceipt: releaseAlertReceipt,
+    releaseReservedReceipts: releaseReservedReceipts,
+    boundedNoticeQueue: boundedNoticeQueue,
+    classifyNotifyResult: classifyNotifyResult,
+    advanceNoticeQueue: advanceNoticeQueue,
+    clearNoticeEffects: clearNoticeEffects
   }
 }

@@ -20,7 +20,6 @@ Panel {
   property var hostWidget: null
   property var service: null
   property bool preferencesExpanded: false
-  property bool incidentExpanded: false
   property int roomIndex: 0
 
   readonly property var desk: service
@@ -30,15 +29,17 @@ Panel {
   readonly property bool roomFresh: desk ? desk.selectedRoomFresh : false
   readonly property var assignment: room ? room.assignment : null
   readonly property var rooms: desk && desk.status ? desk.status.rooms : []
-  readonly property var objectiveRows: assignment ? assignment.objectiveRows.slice(0, 3) : []
-  readonly property var scoreRows: room ? room.scores.slice(0, 6) : []
   readonly property string appearanceMode: settingString("appearance", "Omarchy")
+  readonly property string alertStatusText: serviceText("alertStatusText")
+  readonly property string alertStatusDetail: serviceText("alertStatusDetail")
   readonly property string stateLine: {
     if (!desk) return "Starting the Dispatch desk…"
-    if (desk.connectionState === "loading") return "Opening a line to the city…"
+    if (desk.requestRunning && desk.lastRequestFailed) return "Retrying the city desk…"
+    if (desk.connectionState === "loading" || (!desk.status && desk.requestRunning)) return "Loading live stats…"
     if (desk.connectionState === "unavailable") return "The Dispatch desk is unavailable."
-    if (desk.connectionState === "stale") return "Last report " + ageText(room ? room.localObservedAt : desk.receivedAt) + ". Clocks are paused."
-    if (desk.connectionState === "empty") return "The city is quiet."
+    if (desk.connectionState === "stale" || (room && !roomFresh && desk.status))
+      return "Last report " + ageText(room ? room.localObservedAt : desk.receivedAt) + ". Clocks are paused."
+    if (desk.connectionState === "empty") return "No active public rooms."
     var people = desk.totals.humans === 1 ? "1 investigator" : desk.totals.humans + " investigators"
     var rats = desk.totals.players === 1 ? "1 rat" : desk.totals.players + " rats"
     return people + "  ·  " + rats + "  ·  " + desk.totals.rooms + (desk.totals.rooms === 1 ? " room" : " rooms")
@@ -77,6 +78,11 @@ Panel {
     if (seconds < 60) return seconds + " seconds ago"
     var minutes = Math.floor(seconds / 60)
     return minutes === 1 ? "1 minute ago" : minutes + " minutes ago"
+  }
+  function serviceText(name) {
+    if (!desk) return ""
+    var value = desk[name]
+    return value === undefined || value === null ? "" : String(value)
   }
   function resolveService() {
     if (!service) service = ServiceBridge.current()
@@ -252,6 +258,11 @@ Panel {
 
             Rectangle { width: parent.width; height: 1; color: appearance.border }
             Text { width: parent.width; textFormat: Text.PlainText; text: root.stateLine; color: appearance.muted; font.family: appearance.bodyFont; font.pixelSize: Style.font.body; wrapMode: Text.WordWrap }
+            Text {
+              visible: root.alertStatusText !== ""
+              width: parent.width; textFormat: Text.PlainText; text: root.alertStatusText
+              color: appearance.muted; font.family: appearance.bodyFont; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap
+            }
 
             Rectangle {
               visible: root.desk && root.desk.effectiveFixture !== ""
@@ -275,7 +286,7 @@ Panel {
               Button { id: backRoom; visible: root.rooms.length > 1; text: "‹"; focusable: true; enabled: root.roomIndex > 0; foreground: appearance.text; fontFamily: appearance.bodyFont; onClicked: root.moveRoom(-1) }
               Button {
                 width: parent.width - (backRoom.visible ? backRoom.width + forwardRoom.width + parent.spacing * 2 : 0)
-                text: root.room ? root.room.label.toUpperCase() + "  ·  " + root.room.players + "/16 RATS" : "NO ACTIVE ROOMS"
+                text: root.room ? root.room.label.toUpperCase() + "  ·  " + dispatchRoster.playersLabel(root.room.players) : "NO ACTIVE PUBLIC ROOMS"
                 iconText: root.room && root.room.humans > 0 ? "●" : ""
                 selected: true; focusable: true; foreground: appearance.text; accent: appearance.accent; fontFamily: appearance.bodyFont
                 onClicked: if (root.rooms.length > 1) root.moveRoom(1)
@@ -354,22 +365,6 @@ Panel {
               }
             }
 
-            Column {
-              visible: root.objectiveRows.length > 0 && root.assignment && root.assignment.id !== "closing-time"
-              width: parent.width; spacing: Style.space(7)
-              PanelSectionHeader { text: "TOP THREE  ·  ASSIGNMENT STANDINGS"; foreground: appearance.muted; fontFamily: appearance.bodyFont }
-              Repeater {
-                model: root.objectiveRows
-                DispatchProgressRow {
-                  required property var modelData
-                  required property int index
-                  entry: modelData; rank: index + 1
-                  paperMode: root.assignment && root.assignment.id === "chain-of-custody"
-                  foreground: appearance.text; muted: appearance.muted; accent: appearance.accent; borderColor: appearance.border; fontFamily: appearance.bodyFont
-                }
-              }
-            }
-
             Text { visible: root.desk && root.desk.connectionState === "unavailable"; width: parent.width; textFormat: Text.PlainText; text: root.desk ? root.desk.errorText : ""; color: appearance.urgent; font.family: appearance.bodyFont; font.pixelSize: Style.font.body; wrapMode: Text.WordWrap }
 
             Button {
@@ -384,6 +379,23 @@ Panel {
               onClicked: root.desk.returnToGame()
             }
 
+            DispatchRoster {
+              id: dispatchRoster
+              width: parent.width
+              scores: root.room && root.room.scores ? root.room.scores : []
+              assignmentId: root.assignment ? root.assignment.id : ""
+              caseHolderName: root.assignment ? root.assignment.caseHolderName : ""
+              connectionState: root.desk ? root.desk.connectionState : "loading"
+              requestRunning: root.desk ? root.desk.requestRunning : false
+              lastRequestFailed: root.desk ? root.desk.lastRequestFailed : false
+              hasReport: !!(root.desk && root.desk.status)
+              hasPublicRoom: root.rooms.length > 0
+              roomFresh: root.roomFresh
+              localObservedAt: root.room ? root.room.localObservedAt : (root.desk ? root.desk.receivedAt : 0)
+              nowMs: root.desk ? root.desk.nowMs : Date.now()
+              foreground: appearance.text; muted: appearance.muted; accent: appearance.accent; borderColor: appearance.border; fontFamily: appearance.bodyFont
+            }
+
             Button {
               visible: root.room !== null
               width: parent.width; text: root.desk && root.desk.windowOpen ? "Join separately" : "Join selected room"
@@ -391,24 +403,12 @@ Panel {
               enabled: root.desk && root.room && root.room.joinable && !root.desk.desktopBusy && !root.desk.limited
               onClicked: root.desk.joinRoom(root.room)
             }
+
             Row {
               width: parent.width; spacing: Style.space(7)
               Button { width: (parent.width - parent.spacing * 2) / 3; text: "Copy invite"; focusable: true; foreground: appearance.text; fontFamily: appearance.bodyFont; enabled: root.desk && !root.desk.desktopBusy; onClicked: root.desk.copyLink(root.desk.limited ? null : root.room) }
               Button { width: (parent.width - parent.spacing * 2) / 3; text: root.desk && !root.previewing && root.desk.recording ? "Stop recording" : "Record"; focusable: true; foreground: appearance.text; fontFamily: appearance.bodyFont; enabled: root.desk && !root.desk.desktopBusy; onClicked: root.desk.toggleRecording() }
               Button { width: (parent.width - parent.spacing * 2) / 3; text: "Captures"; focusable: true; foreground: appearance.text; fontFamily: appearance.bodyFont; enabled: root.desk && !root.desk.desktopBusy; onClicked: root.desk.openCaptures() }
-            }
-
-            Button {
-              visible: root.scoreRows.length > 0; width: parent.width
-              text: root.incidentExpanded ? "Hide combat totals" : "Combat totals"
-              iconText: root.incidentExpanded ? "\uf106" : "\uf107"; focusable: true
-              foreground: appearance.muted; fontFamily: appearance.bodyFont
-              onClicked: root.incidentExpanded = !root.incidentExpanded
-            }
-            Column {
-              visible: root.incidentExpanded && root.scoreRows.length > 0; width: parent.width; spacing: Style.space(6)
-              PanelSectionHeader { text: "KILLS / DEATHS"; foreground: appearance.muted; fontFamily: appearance.bodyFont }
-              Repeater { model: root.scoreRows; DispatchProgressRow { required property var modelData; entry: modelData; showObjective: false; foreground: appearance.text; muted: appearance.muted; accent: appearance.accent; borderColor: appearance.border; fontFamily: appearance.bodyFont } }
             }
 
             Button { visible: root.desk && (!root.desk.launcherInstalled || !root.desk.launcherCanonical || !root.desk.launcherDurable); width: parent.width; text: root.desk && root.desk.launcherInstalled ? "Repair launcher" : "Add to app menu"; focusable: true; bordered: true; foreground: appearance.text; fontFamily: appearance.bodyFont; enabled: root.desk && !root.desk.desktopBusy; onClicked: root.desk.installLauncher() }
@@ -425,9 +425,19 @@ Panel {
                 Button { width: (parent.width - parent.spacing) / 2; text: "Rat Detective"; focusable: true; selected: root.appearanceMode === "Rat Detective"; bordered: true; foreground: appearance.text; accent: appearance.accent; fontFamily: appearance.bodyFont; onClicked: root.setAppearance("Rat Detective") }
               }
               PanelSectionHeader { text: "DISPATCH ALERTS"; foreground: appearance.muted; fontFamily: appearance.bodyFont }
+              Text {
+                visible: root.alertStatusText !== ""
+                width: parent.width; textFormat: Text.PlainText; text: root.alertStatusText
+                color: appearance.muted; font.family: appearance.bodyFont; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap
+              }
+              Text {
+                visible: root.alertStatusDetail !== ""
+                width: parent.width; textFormat: Text.PlainText; text: root.alertStatusDetail
+                color: appearance.muted; font.family: appearance.bodyFont; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap
+              }
               Toggle { width: parent.width; label: "Dispatch alerts"; description: "Notify when investigators gather. Disabled by default."; checked: root.settingBool("alertsEnabled", false); foreground: appearance.text; accent: appearance.accent; fontFamily: appearance.bodyFont; onClicked: root.persistSetting("alertsEnabled", !checked) }
               Toggle { width: parent.width; label: "Assignment alerts"; description: "Include new assignment notices."; checked: root.settingBool("alertAssignmentChanges", false); foreground: appearance.text; accent: appearance.accent; fontFamily: appearance.bodyFont; onClicked: root.persistSetting("alertAssignmentChanges", !checked) }
-              DispatchStepper { label: "Gathering threshold"; suffix: " people"; value: root.settingInt("alertHumanThreshold", 2); minimum: 1; maximum: 16; foreground: appearance.text; fontFamily: appearance.bodyFont; onChanged: function(value) { root.persistSetting("alertHumanThreshold", value) } }
+              DispatchStepper { label: "Gathering threshold"; suffix: " people"; value: root.settingInt("alertHumanThreshold", 2); minimum: 1; maximum: 10; foreground: appearance.text; fontFamily: appearance.bodyFont; onChanged: function(value) { root.persistSetting("alertHumanThreshold", value) } }
               DispatchStepper { label: "Alert cooldown"; suffix: " min"; value: root.settingInt("alertCooldownMin", 15); minimum: 1; maximum: 1440; step: 5; foreground: appearance.text; fontFamily: appearance.bodyFont; onChanged: function(value) { root.persistSetting("alertCooldownMin", value) } }
               DispatchStepper { label: "Quiet hours start"; suffix: ":00"; value: root.settingInt("quietStartHour", 22); minimum: 0; maximum: 23; foreground: appearance.text; fontFamily: appearance.bodyFont; onChanged: function(value) { root.persistSetting("quietStartHour", value) } }
               DispatchStepper { label: "Quiet hours end"; suffix: ":00"; value: root.settingInt("quietEndHour", 8); minimum: 0; maximum: 23; foreground: appearance.text; fontFamily: appearance.bodyFont; onChanged: function(value) { root.persistSetting("quietEndHour", value) } }

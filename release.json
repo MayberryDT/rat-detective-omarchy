@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "co.animasai.rat-detective",
-  "version": "1.1.1",
-  "contentHash": "74704ca694993b98aa828615f2f217c4d2bf19e0fb398ae41feaa547d702705a",
+  "version": "1.2.0",
+  "contentHash": "53e8ac0b7bed24bfaa6f3b0c79527c8f613ba916ab597ebd229d61a6391939ab",
   "files": {
     ".github/workflows/validate.yml": {
       "sha256": "69cc497deb6393ae348c28ea076b62a688ddd5b26c610d3bf1747a2331f4386d",
@@ -56,6 +56,10 @@
       "sha256": "7cf86e9a1c957676646e893c40f52471e8cd81b5fec915c9d6bef3ea5e3386ec",
       "executable": false
     },
+    "components/DispatchRoster.qml": {
+      "sha256": "f01499e11cb5d2886880b67771efb77968bce57edd6a5af10b228350f9acd9f8",
+      "executable": false
+    },
     "components/DispatchStateBadge.qml": {
       "sha256": "02582c18e61fb1325883d4f5655cb4eeddaa17f7630910ca72c5a680c4dc4963",
       "executable": false
@@ -77,19 +81,19 @@
       "executable": false
     },
     "manifest.json": {
-      "sha256": "c7a416c839711aec099d762c14407883fdd81a640771039d0b35bade92acaadd",
+      "sha256": "29114e072050f607ec5c6d9ef9263b91e3f646e7dabdd3dc6159ffbcc087efd8",
       "executable": false
     },
     "Panel.qml": {
-      "sha256": "7fa0b14c3d729ef0f253032573242d6e59f3a3ee7e706479a159fd43627b6654",
+      "sha256": "ff7f4f353a1ba3398e2a6d114c0feeb4f2fa63509ec787526a7706aac7e5ccfb",
       "executable": false
     },
     "preview.png": {
-      "sha256": "f8c1bd7cc2ce4a9c66a3b1bb51ba5be5a5ef6cad4475590e21f622456d8be9fe",
+      "sha256": "a469ff58d3e13eea8c8bcad1c06aba7b119e9b769154c6b55eec9ead168b6a29",
       "executable": false
     },
     "README.md": {
-      "sha256": "f66a74a349ecdfa7a01148701db0a2b8fe248f34ce842dcf3a90e9e5c4756044",
+      "sha256": "040ce71844f380d7d9e0c2c27981c38cb209cf1e0545b0c778a0df97a46f50bd",
       "executable": false
     },
     "scripts/install-webapp.sh": {
@@ -109,7 +113,7 @@
       "executable": true
     },
     "Service.qml": {
-      "sha256": "87b53ca61dcb145bd2455a4f932ae5ef56ee2fa5e7b24256cd2e50f29737071d",
+      "sha256": "955b57b88e93263a4507fb6e3c6d04078777a45ac18ae3ea4094ed33e20a37e3",
       "executable": false
     },
     "ServiceBridge.js": {
@@ -117,7 +121,7 @@
       "executable": false
     },
     "StatusModel.js": {
-      "sha256": "e77d1a7f51353b531814f837627a9e668296f12069b59caf692fc17e195fbdcf",
+      "sha256": "e8b32031bbf287e38f8e677e626efeea3dc4103fb0ab076d019c7e093fa9fafa",
       "executable": false
     },
     "tests/qml/stubs/qs/Commons/Color.qml": {
@@ -140,6 +144,10 @@
       "sha256": "3bc94a48b300e6b872ff18f5fcd62140c913f56535327adef43ff7abf03d8e4b",
       "executable": false
     },
+    "tests/qml/tst_roster.qml": {
+      "sha256": "aa2dc00e480c30426b0adc17c5e6830c4cf7667107665936d4af49970616f112",
+      "executable": false
+    },
     "tests/run": {
       "sha256": "322d77ab0f05d9daea23e60e24d7c1df853530ffd7b58ead8c32c774d1b00080",
       "executable": true
@@ -149,7 +157,7 @@
       "executable": true
     },
     "tests/status-model.test.mjs": {
-      "sha256": "e4825b4a8e4b9c150516f2be0730d868f21551c28d0c95ded470ee0d9dc7621b",
+      "sha256": "49ed4d7c8c633dc6a0bf075ee19de0882dd4fbaa5c9320f9212433a0521c58b9",
       "executable": false
     }
   }
