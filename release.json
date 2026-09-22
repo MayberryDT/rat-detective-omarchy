@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "co.animasai.rat-detective",
   "version": "1.3.0",
-  "contentHash": "043da1a25e19e982060bd63eb53cb0abaf775de46f52a77a45f98ff1fdfc8c33",
+  "contentHash": "ad81670b3b235a23892ff998f41bbdd117db923d66eb616526a4412d426313a5",
   "files": {
     ".github/workflows/validate.yml": {
-      "sha256": "b71fd61b977e1c9c75903de363f3b6988fbef8954c36bbff8eab149f72e9f601",
+      "sha256": "98515c3571066859e70ba41223dbf2ea1c427edfaa760a5fbfaec32430ef159c",
       "executable": false
     },
     "assets/badge.webp": {
