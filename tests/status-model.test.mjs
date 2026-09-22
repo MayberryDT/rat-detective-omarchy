@@ -88,19 +88,32 @@ test('legacy status stays explicitly limited',async()=>{
   assert.equal(model.connectionState(status,1000,75_999,90_000,false),'live');
 });
 
-test('alerts baseline, suppressions, thresholds, dedupe and cooldown are deterministic',async()=>{
+test('alerts fire once for a fresh two-human room and honor the gathering threshold',async()=>{
   const model=await loadModel();
   const previous=model.normalizeV1({schemaVersion:1,observedAt:1000,rooms:[{...paperRoom,humans:1}]},1000);
   const current=model.normalizeV1({schemaVersion:1,observedAt:2000,rooms:[paperRoom]},2000);
-  const settings={alertsEnabled:true,alertHumanThreshold:2,quietStartHour:0,quietEndHour:0};
-  assert.equal(model.alertEvents(null,current,settings,2_000,{fresh:true}).length,0);
-  const events=model.alertEvents(previous,current,settings,2_000,{fresh:true});
+  const leftovers={alertsEnabled:true,alertAssignmentChanges:true,quietStartHour:22,quietEndHour:8};
+  const settings={...leftovers,alertHumanThreshold:2};
+  const live={fresh:true};
+  assert.equal(model.gatheringThreshold({}),2);
+  assert.equal(model.gatheringThreshold({alertHumanThreshold:8}),8);
+  assert.equal(model.gatheringThreshold({alertHumanThreshold:0}),1);
+  assert.equal(model.alertEvents(null,current,{alertsEnabled:true,alertHumanThreshold:8},2_000,live).length,0);
+  const startup=model.alertEvents(null,current,settings,2_000,live);
+  assert.equal(startup.length,1,'startup with a qualifying lobby can notify once');
+  assert.equal(startup[0].title,'3 people are playing Rat Detective.');
+  assert.equal(startup[0].body,'');
+  assert.equal(startup[0].key,'gathering:public-live-v2');
+  const events=model.alertEvents(previous,current,settings,2_000,live);
   assert.equal(events.length,1);
   assert.equal(model.alertEvents(previous,current,settings,2_000,{fresh:true,gameFocused:true}).length,0);
   assert.equal(model.alertEvents(previous,current,settings,2_000,{fresh:true,dnd:true}).length,0);
+  assert.equal(model.alertEvents(previous,current,{alertsEnabled:false},2_000,live).length,0);
   const accepted=model.filterAlertReceipts(events,{},2_000,60_000);
   assert.equal(accepted.events.length,1);
   assert.equal(model.filterAlertReceipts(events,accepted.receipts,3_000,60_000).events.length,0);
+  const churn=model.normalizeV1({schemaVersion:1,observedAt:3000,rooms:[{...paperRoom,roundId:'round-next',humans:4}]},3000);
+  assert.equal(model.filterAlertReceipts(model.alertEvents(current,churn,settings,3000,live),accepted.receipts,3000,0).events.length,0);
 });
 
 test('Jurisdiction hides the next zone until warning and freezes stale countdowns',async()=>{
@@ -152,19 +165,20 @@ function overflowRoom(humans,observedAt,expiresAt){
 
 test('a new fresh room meeting the gathering threshold after baseline alerts',async()=>{
   const model=await loadModel();
-  const settings={alertsEnabled:true,alertHumanThreshold:2,quietStartHour:0,quietEndHour:0};
+  const settings={alertsEnabled:true};
   const baseline=model.normalizeV1({schemaVersion:1,observedAt:1000,rooms:[{...paperRoom,humans:1}]},1000);
   const arrived=model.normalizeV1({schemaVersion:1,observedAt:2000,rooms:[{...paperRoom,humans:1},overflowRoom(2,2000,77_000)]},2000);
-  assert.equal(model.alertEvents(null,arrived,settings,2000,{fresh:true}).length,0,'first snapshot stays silent');
+  const startup=model.alertEvents(null,arrived,settings,2000,{fresh:true});
+  assert.equal(startup.length,1);
+  assert.equal(startup[0].title,'2 people are playing Rat Detective.');
   const events=model.alertEvents(baseline,arrived,settings,2000,{fresh:true});
   assert.equal(events.length,1);
-  assert.match(events[0].body,/2 human/);
-  assert.match(events[0].body,/City aaaaaaaa|Public room/);
+  assert.equal(events[0].key,'gathering:public-live-v2-aaaaaaaa-1234-4234-9234-123456789abc');
   const staleArrival=model.normalizeV1({schemaVersion:1,observedAt:2000,rooms:[{...paperRoom,humans:1},overflowRoom(2,1000,1100)]},2000);
   assert.equal(model.alertEvents(baseline,staleArrival,settings,2500,{fresh:true}).length,0,'stale new rooms stay silent');
-  assert.equal(model.alertEvaluateMode(false,'loading','live'),'baseline');
-  assert.equal(model.alertEvaluateMode(true,'stale','live'),'baseline');
-  assert.equal(model.alertEvaluateMode(true,'live','live'),'evaluate');
+  assert.equal(model.alertEvaluateMode(false,'loading','live'),'evaluate');
+  assert.equal(model.alertEvaluateMode(true,'stale','live'),'evaluate');
+  assert.equal(model.alertEvaluateMode(true,'live','stale'),'hold');
 });
 
 test('stale occupancy cannot claim a live city',async()=>{
@@ -211,70 +225,58 @@ test('schema still accepts sixteen rats while a ten-rat city stays valid',async(
   assert.equal(sixteen.rooms[0].humans,16);
 });
 
-test('alert status explains disabled, DND, quiet, focus, stale, baseline and cooldown',async()=>{
+test('alert status explains disabled, DND, focus and stale without quiet hours or cooldown',async()=>{
   const model=await loadModel();
-  const armed={alertsEnabled:true,alertHumanThreshold:2,alertAssignmentChanges:true,quietStartHour:22,quietEndHour:8};
-  const live={fresh:true,baselineReady:true,connectionState:'live',desktopReady:true,gameFocused:false,dnd:false,locked:false,fixture:false};
-  const off=model.alertWatchStatus({alertsEnabled:false},noon(),live,{},900_000);
+  const armed={alertsEnabled:true,quietStartHour:22,quietEndHour:8,alertCooldownMin:15};
+  const live={fresh:true,connectionState:'live',desktopReady:true,gameFocused:false,dnd:false,locked:false,fixture:false};
+  const off=model.alertWatchStatus({alertsEnabled:false},noon(),live);
   assert.equal(off.text,'Alerts: off');
   assert.match(off.detail,/enable/i);
-  const dnd=model.alertWatchStatus(armed,noon(),{...live,dnd:true},{},900_000);
+  const dnd=model.alertWatchStatus(armed,noon(),{...live,dnd:true});
   assert.equal(dnd.text,'Alerts paused: Do not disturb');
   assert.match(dnd.detail,/Do Not Disturb|do not disturb/i);
-  const quiet=model.alertWatchStatus(armed,night(),live,{},900_000);
-  assert.equal(quiet.text,'Alerts paused: quiet hours');
-  assert.match(quiet.detail,/22:00/);
-  const focus=model.alertWatchStatus(armed,noon(),{...live,gameFocused:true},{},900_000);
+  const quiet=model.alertWatchStatus(armed,night(),live);
+  assert.equal(quiet.text,'Alerts: watching the city');
+  assert.match(quiet.detail,/at least 2 people/i);
+  const focus=model.alertWatchStatus(armed,noon(),{...live,gameFocused:true});
   assert.equal(focus.text,'Alerts paused: in game');
   assert.match(focus.detail,/focused/i);
-  const stale=model.alertWatchStatus(armed,noon(),{...live,fresh:false,connectionState:'stale'},{},900_000);
+  const stale=model.alertWatchStatus(armed,noon(),{...live,fresh:false,connectionState:'stale'});
   assert.equal(stale.text,'Alerts paused: stale report');
   assert.match(stale.detail,/stale/i);
-  const baseline=model.alertWatchStatus(armed,noon(),{...live,baselineReady:false},{},900_000);
-  assert.equal(baseline.text,'Alerts: establishing baseline');
-  assert.match(baseline.detail,/first|silent|replay/i);
-  const cooldown=model.alertWatchStatus(armed,noon(),live,{'gathering:public-live-v2:round-paper:2':noon()-60_000},900_000);
-  assert.equal(cooldown.text,'Alerts paused: cooling down');
-  assert.match(cooldown.detail,/sent recently|cooldown/i);
-  const watching=model.alertWatchStatus(armed,noon(),live,{},900_000);
+  const watching=model.alertWatchStatus(armed,noon(),live);
   assert.equal(watching.text,'Alerts: watching the city');
-  assert.match(watching.detail,/2 investigator/);
-  assert.match(watching.detail,/assignment/i);
-  const notReady=model.alertWatchStatus(armed,noon(),{...live,connectionState:'loading',fresh:false,desktopReady:false},{},900_000);
+  const notReady=model.alertWatchStatus(armed,noon(),{...live,connectionState:'loading',fresh:false,desktopReady:false});
   assert.equal(notReady.text,'Alerts paused: not ready');
 });
 
 test('queued notices reserve receipts until sent, suppressed, or exhausted',async()=>{
   const model=await loadModel();
-  const settings={alertsEnabled:true,alertHumanThreshold:2,quietStartHour:0,quietEndHour:0};
-  const live={fresh:true,baselineReady:true,desktopReady:true};
+  const settings={alertsEnabled:true};
+  const live={fresh:true,desktopReady:true};
   assert.equal(model.noticeDeliverable(settings,noon(),live),true);
   assert.equal(model.noticeDeliverable(settings,noon(),{...live,dnd:true}),false);
   assert.equal(model.noticeDeliverable(settings,noon(),{...live,gameFocused:true}),false);
-  const events=[{key:'gathering:public-live-v2:round-paper:2',title:'Rats are gathering',body:'2 human investigators in Public city'}];
+  const events=[{key:'gathering:public-live-v2',title:'2 people are playing Rat Detective.',body:''}];
   const claimed=model.filterAlertReceipts(events,{},1000,900_000);
   assert.equal(claimed.events.length,1);
   assert.equal(model.receiptState(claimed.receipts,events[0].key),'reserved');
   const failed=model.advanceNoticeQueue(claimed.events,claimed.receipts,'failed',1100);
   assert.equal(failed.queue.length,1);
   assert.equal(model.receiptState(failed.receipts,events[0].key),'reserved');
-  const stillQueued=model.filterAlertReceipts(events,failed.receipts,2000,900_000,{[events[0].key]:true});
+  const stillQueued=model.filterAlertReceipts(events,failed.receipts,2000,0,{[events[0].key]:true});
   assert.equal(stillQueued.events.length,0,'a queued retry is not enlisted twice');
-  const reservedBlocks=model.filterAlertReceipts(events,failed.receipts,2000,900_000);
-  assert.equal(reservedBlocks.events.length,0,'reservation keeps cooldown and dedup');
-  const waiting=model.alertWatchStatus({alertsEnabled:true,alertHumanThreshold:2,quietStartHour:0,quietEndHour:0},noon(),{...live,deliveryPending:true},failed.receipts,900_000);
+  const reservedBlocks=model.filterAlertReceipts(events,failed.receipts,2000,0);
+  assert.equal(reservedBlocks.events.length,0,'reservation keeps pending dedup');
+  const waiting=model.alertWatchStatus(settings,noon(),{...live,deliveryPending:true});
   assert.equal(waiting.text,'Alerts paused: waiting to deliver');
   assert.match(waiting.detail,/not been delivered|waiting/i);
-  const reservedOnly=model.alertWatchStatus({alertsEnabled:true,alertHumanThreshold:2,quietStartHour:0,quietEndHour:0},noon(),live,failed.receipts,900_000);
-  assert.notEqual(reservedOnly.text,'Alerts paused: cooling down');
   const sent=model.advanceNoticeQueue(failed.queue,failed.receipts,'sent',5000);
   assert.equal(sent.queue.length,0);
   assert.equal(model.receiptState(sent.receipts,events[0].key),'sent');
   assert.equal(model.receiptTime(sent.receipts,events[0].key),5000);
-  const afterSend=model.filterAlertReceipts(events,sent.receipts,5200,900_000);
+  const afterSend=model.filterAlertReceipts(events,sent.receipts,5200,0);
   assert.equal(afterSend.events.length,0);
-  const cooling=model.alertWatchStatus({alertsEnabled:true,alertHumanThreshold:2,quietStartHour:0,quietEndHour:0},5200,live,sent.receipts,900_000);
-  assert.equal(cooling.text,'Alerts paused: cooling down');
   const suppressed=model.advanceNoticeQueue(events,claimed.receipts,'suppressed',1300);
   assert.equal(suppressed.queue.length,0);
   assert.equal(model.receiptState(suppressed.receipts,events[0].key),'');
@@ -291,22 +293,72 @@ test('helper JSON commits only an actual sent action',async()=>{
   assert.equal(model.classifyNotifyResult(1,'{"ok":false,"action":"failed"}'),'failed');
 });
 
-test('multiple events share one cooldown and fixture clears only reservations',async()=>{
+test('independent rooms can both notify and old receipts do not suppress',async()=>{
   const model=await loadModel();
-  const first={key:'gathering:public-live-v2:round-paper:2',title:'Rats are gathering',body:'2 human investigators in Public city'};
-  const second={key:'gathering:public-live-v2-aaaaaaaa-1234-4234-9234-123456789abc:round-overflow:2',title:'Rats are gathering',body:'2 human investigators in City aaaaaaaa'};
+  const first={key:'gathering:public-live-v2',title:'2 people are playing Rat Detective.',body:''};
+  const second={key:'gathering:public-live-v2-aaaaaaaa-1234-4234-9234-123456789abc',title:'2 people are playing Rat Detective.',body:''};
   const accepted=model.filterAlertReceipts([first,second],{},1000,60_000);
-  assert.equal(accepted.events.length,1);
-  assert.equal(accepted.events[0].key,first.key);
-  const later=model.filterAlertReceipts([second],accepted.receipts,2000,60_000);
-  assert.equal(later.events.length,0);
-  const reserved=model.filterAlertReceipts([first],{},3000,60_000);
+  assert.equal(accepted.events.length,2);
+  const staleOld=model.filterAlertReceipts([first],{'gathering:public-live-v2:round-paper:2':{at:500,state:'sent'}},2000,60_000);
+  assert.equal(staleOld.events.length,1);
+  assert.equal(staleOld.receipts['gathering:public-live-v2:round-paper:2'],undefined);
+  const reserved=model.filterAlertReceipts([first],{},3000,0);
   const sent=model.advanceNoticeQueue(reserved.events,reserved.receipts,'sent',4000);
-  const leftover=model.filterAlertReceipts([second],sent.receipts,4100,60_000);
-  leftover.receipts['gathering:pending:round:2']={at:4100,state:'reserved'};
+  const leftover=model.filterAlertReceipts([second],sent.receipts,4100,0);
+  leftover.receipts['gathering:pending']={at:4100,state:'reserved'};
   const cleared=model.clearNoticeEffects([first,second],leftover.receipts);
   assert.equal(cleared.queue.length,0);
   assert.equal(model.receiptState(cleared.receipts,first.key),'sent');
-  assert.equal(model.receiptState(cleared.receipts,'gathering:pending:round:2'),'');
+  assert.equal(model.receiptState(cleared.receipts,'gathering:pending'),'');
   assert.equal(model.boundedNoticeQueue(new Array(12).fill(first)).length,8);
+  const overflow=Array.from({length:10},(_,index)=>({key:'gathering:room-'+index,title:'2 people are playing Rat Detective.',body:'',episode:1000+index}));
+  const reservedOnly=model.filterAlertReceipts(overflow,{},1000,0,{},[],8);
+  assert.equal(reservedOnly.events.length,8);
+  assert.equal(Object.keys(reservedOnly.receipts).filter(key=>model.receiptState(reservedOnly.receipts,key)==='reserved').length,8);
+});
+
+test('recognized bot and human ids never invent a label for unknown rows',async()=>{
+  const model=await loadModel();
+  assert.equal(model.participantKind('rd-ai-00'),'bot');
+  assert.equal(model.participantKind('rd-ai-10'),'bot');
+  assert.equal(model.participantKind('2c1a0b8e-4d3f-4a91-9c2e-7b6a5d4c3e21'),'human');
+  assert.equal(model.participantKind('1'),'');
+  assert.equal(model.participantKind('row-0'),'');
+  assert.equal(model.participantKind('Ada'),'');
+  const status=model.normalizeV1({schemaVersion:1,observedAt:1000,rooms:[{
+    ...paperRoom,
+    scores:[
+      {id:'rd-ai-03',name:'Constable Alley',kills:1,deaths:0,objectiveScore:0},
+      {id:'2c1a0b8e-4d3f-4a91-9c2e-7b6a5d4c3e21',name:'Ada',kills:2,deaths:1,objectiveScore:2},
+      {id:'legacy-score',name:'Marlowe',kills:3,deaths:2,objectiveScore:1}
+    ]
+  }]},1000);
+  const kinds=Object.fromEntries(status.rooms[0].scores.map(row=>[row.name,row.kind]));
+  assert.equal(kinds['Constable Alley'],'bot');
+  assert.equal(kinds.Ada,'human');
+  assert.equal(kinds.Marlowe,'');
+});
+
+test('rearms only after a fresh room drops below two humans',async()=>{
+  const model=await loadModel();
+  const sent={'gathering:public-live-v2':{at:1000,state:'sent'}};
+  const low=model.normalizeV1({schemaVersion:1,observedAt:2000,rooms:[{...paperRoom,humans:1}]},2000);
+  const rearmed=model.rearmGatheringReceipts(sent,low.rooms,2000);
+  assert.equal(model.receiptState(rearmed,'gathering:public-live-v2'),'');
+  const missing=model.rearmGatheringReceipts(sent,[],2000);
+  assert.equal(model.receiptState(missing,'gathering:public-live-v2'),'sent');
+  const stale=model.normalizeV1({schemaVersion:1,observedAt:2000,rooms:[overflowRoom(0,1000,1100)]},2000);
+  const staleKept=model.rearmGatheringReceipts({'gathering:public-live-v2-aaaaaaaa-1234-4234-9234-123456789abc':{at:1000,state:'sent'}},stale.rooms,2500);
+  assert.equal(model.receiptState(staleKept,'gathering:public-live-v2-aaaaaaaa-1234-4234-9234-123456789abc'),'sent');
+  const queued=[{key:'gathering:public-live-v2',title:'2 people are playing Rat Detective.',body:''}];
+  assert.equal(model.dropQueuedGathering(queued,rearmed).length,0);
+  const live=model.normalizeV1({schemaVersion:1,observedAt:1000,rooms:[paperRoom]},1000);
+  const aged=model.normalizeReceipts({'gathering:public-live-v2':{at:1000,state:'sent'}},1000+90_000_000,live.rooms);
+  assert.equal(model.receiptState(aged,'gathering:public-live-v2'),'sent');
+  const staleAttempt={key:'gathering:public-live-v2',episode:1,title:'2 people are playing Rat Detective.',body:''};
+  const liveAttempt={key:'gathering:public-live-v2',episode:2,title:'2 people are playing Rat Detective.',body:''};
+  const ignored=model.settleNoticeAttempt([liveAttempt],{'gathering:public-live-v2':{at:2000,state:'reserved',episode:2}},'sent',3000,staleAttempt);
+  assert.equal(ignored.settled,false);
+  assert.equal(ignored.queue.length,1);
+  assert.equal(model.receiptState(ignored.receipts,'gathering:public-live-v2'),'reserved');
 });

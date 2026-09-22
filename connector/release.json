@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "co.animasai.rat-detective.highlights-connector",
+  "version": "1.0.0",
+  "contentHash": "1b52f323819ea12c89749687988f874d5ad7c5a150c3df6ffc0f6e26fbf76cd3",
+  "files": {
+    "content.js": {
+      "sha256": "586dcfa21e23247a598dd63aa9778ca604f38f377a47f80588a643d9a942bdcf",
+      "executable": false
+    },
+    "manifest.json": {
+      "sha256": "0e2f290eaa09a4ad510497a09f653d74459887cf2df30ca32dc2d3e831fdc34e",
+      "executable": false
+    },
+    "native-host.json": {
+      "sha256": "20a1913e19f33eeead5e5c9e2f7f850750118f4153c5d4ff9a2ca31287937a3e",
+      "executable": false
+    },
+    "README.md": {
+      "sha256": "58d4139d5991d1f938808c7f09016200a09d9efbfdaf97a7dee60b1ca12ad603",
+      "executable": false
+    },
+    "service-worker.js": {
+      "sha256": "d30bed01720b4e3f48119bb9cebfbb8ba1f45e33ef85ce08496c972ea1f61aa5",
+      "executable": false
+    }
+  }
+}

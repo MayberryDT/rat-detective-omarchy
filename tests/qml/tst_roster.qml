@@ -6,6 +6,8 @@ import "../../components" as Dispatch
 TestCase {
   id: testCase
   name: "DispatchRoster"
+  when: windowShown
+  visible: true
   width: 420
   height: 640
 
@@ -71,7 +73,23 @@ TestCase {
     return childTexts(subject).join(" | ")
   }
 
+  function shownCopy() {
+    return joinedText().toLowerCase()
+  }
+
+  function refuteBusyCopy(shown) {
+    var text = shown === undefined ? shownCopy() : String(shown).toLowerCase()
+    verify(text.indexOf("round roster") === -1)
+    verify(text.indexOf("live stats") === -1)
+    verify(text.indexOf("live") === -1)
+    verify(text.indexOf("quiet") === -1)
+    verify(text.indexOf("public rooms only") === -1)
+    verify(text.indexOf("private playtest") === -1)
+    verify(text.indexOf("no active public rooms") === -1)
+  }
+
   function test_showsEveryNamedScoreUpToCurrentRosterBound() {
+    subject.width = 406
     subject.assignmentId = "chain-of-custody"
     subject.caseHolderName = "Rat-1"
     subject.connectionState = "live"
@@ -82,12 +100,20 @@ TestCase {
     subject.nowMs = 1200
     subject.scores = namedRats(10)
     compare(subject.visibleRows.length, 10)
+    tryVerify(function() {
+      return findChildrenByName(subject, "rosterRow").length === 10 && subject.implicitHeight > 0
+    }, 1000)
     var shown = joinedText()
     for (var i = 1; i <= 10; i++)
       verify(shown.indexOf("Rat-" + i) !== -1, "missing visible name Rat-" + i)
-    verify(shown.indexOf("ROUND ROSTER") !== -1)
-    verify(shown.indexOf("LIVE STATS") === -1)
+    verify(shown.indexOf("NAME") !== -1)
+    verify(shown.indexOf("OBJ") !== -1)
+    verify(shown.indexOf("K/D") !== -1)
     verify(shown.indexOf("/16") === -1)
+    verify(shown.toLowerCase().indexOf("waiting for game data") === -1)
+    refuteBusyCopy(shown)
+    verify(subject.implicitHeight <= 690)
+    verify(subject.implicitHeight < 500)
   }
 
   function test_doesNotInventAnEleventhRowBeyondTheBound() {
@@ -104,6 +130,7 @@ TestCase {
     verify(shown.indexOf("Overflow-11") === -1)
     verify(shown.indexOf("Overflow-12") === -1)
     verify(shown.indexOf("Rat-10") !== -1)
+    refuteBusyCopy(shown)
   }
 
   function test_skipsBlankNamesInsteadOfInventingRats() {
@@ -119,6 +146,7 @@ TestCase {
     compare(subject.visibleRows.length, 1)
     compare(subject.visibleRows[0].name, "Ada")
     verify(joinedText().indexOf("Ada") !== -1)
+    refuteBusyCopy()
   }
 
   function test_marksOnlyAKnownCaseHolder() {
@@ -189,9 +217,11 @@ TestCase {
     var shown = joinedText()
     verify(shown.indexOf("AI") === -1)
     verify(shown.indexOf("PLAYER") === -1)
+    verify(shown.indexOf("BOT") === -1)
     verify(shown.indexOf("HUMAN") === -1)
     verify(shown.indexOf("YOU") === -1)
     verify(shown.indexOf("9 / 2") !== -1)
+    refuteBusyCopy(shown)
   }
 
   function test_playersLabelNeverClaimsACapacityField() {
@@ -208,30 +238,56 @@ TestCase {
     subject.hasPublicRoom = false
     subject.scores = []
     compare(subject.rosterMessage, "")
-    verify(subject.freshnessText.toLowerCase().indexOf("unavailable") !== -1)
-    verify(joinedText().toLowerCase().indexOf("no active public rooms") === -1)
+    compare(subject.visibleRows.length, 0)
+    var shown = shownCopy()
+    verify(shown.indexOf("waiting for game data") === -1)
+    refuteBusyCopy(shown)
 
     subject.connectionState = "loading"
     subject.requestRunning = true
-    compare(subject.rosterMessage, "")
-    verify(subject.freshnessText.toLowerCase().indexOf("load") !== -1)
-    verify(joinedText().toLowerCase().indexOf("no active public rooms") === -1)
+    compare(subject.rosterMessage, "Waiting for game data")
+    compare(subject.visibleRows.length, 0)
+    verify(joinedText().indexOf("Waiting for game data") !== -1)
+    refuteBusyCopy()
   }
 
-  function test_limitedDoesNotInferAPrivateRoomCause() {
+  function test_connectionMessageIsOneCopyAndExistingRowsStayVisible() {
+    subject.connectionState = "empty"
+    subject.suppressWaiting = true
+    subject.hasReport = false
+    subject.scores = []
+    compare(subject.visibleRows.length, 0)
+    compare(subject.rosterMessage, "")
+    verify(joinedText().indexOf("Waiting for game data") === -1)
+    refuteBusyCopy()
+
+    subject.connectionState = "unavailable"
+    subject.suppressWaiting = true
+    subject.scores = namedRats(3)
+    compare(subject.visibleRows.length, 3)
+    compare(subject.rosterMessage, "")
+    var shown = joinedText()
+    verify(shown.indexOf("Rat-1") !== -1)
+    verify(shown.indexOf("Rat-3") !== -1)
+    verify(shown.indexOf("Waiting for game data") === -1)
+    refuteBusyCopy(shown)
+  }
+
+  function test_emptyFeedWaitsWithoutInventingNamesOrFakeLive() {
     subject.connectionState = "empty"
     subject.hasReport = true
     subject.hasPublicRoom = false
     subject.scores = []
-    compare(subject.rosterMessage, "")
-    compare(subject.freshnessText, "Live")
+    compare(subject.visibleRows.length, 0)
+    compare(subject.rosterMessage, "Waiting for game data")
     var shown = joinedText()
-    verify(shown.indexOf(subject.publicScopeNote) !== -1)
-    verify(shown.indexOf("Private rooms are excluded from this desk.") === -1)
-    verify(shown.split("No active public rooms").length === 1)
+    verify(shown.indexOf("Waiting for game data") !== -1)
+    verify(shown.indexOf("Ada") === -1)
+    verify(shown.indexOf("Rat-1") === -1)
+    refuteBusyCopy(shown)
   }
 
-  function test_freshnessUsesSelectedRoomAgeAndIgnoresSiblingFreshness() {
+  function test_namedRowsStayVisibleWithoutFreshnessClaims() {
     subject.hasReport = true
     subject.hasPublicRoom = true
     subject.connectionState = "live"
@@ -240,30 +296,34 @@ TestCase {
     subject.localObservedAt = 1000
     subject.nowMs = 1200
     subject.scores = namedRats(2)
-    verify(subject.freshnessText.indexOf("Live") !== -1)
-    verify(subject.freshnessText.toLowerCase().indexOf("refresh") === -1)
-    verify(subject.freshnessText.indexOf("just now") !== -1)
+    var shown = joinedText()
+    verify(shown.indexOf("Rat-1") !== -1)
+    verify(shown.indexOf("Rat-2") !== -1)
+    verify(shown.toLowerCase().indexOf("just now") === -1)
+    verify(shown.toLowerCase().indexOf("refresh") === -1)
+    refuteBusyCopy(shown)
 
     subject.requestRunning = false
     subject.roomFresh = false
     subject.localObservedAt = 1000
     subject.nowMs = 13000
-    verify(subject.selectedRoomStale, true)
-    verify(subject.freshnessText.indexOf("12 seconds ago") !== -1)
-    verify(subject.freshnessText.toLowerCase().indexOf("paused") !== -1)
-    verify(subject.freshnessText.indexOf("LIVE STATS") === -1)
-    verify(joinedText().indexOf("ROUND ROSTER") !== -1)
+    shown = joinedText()
+    verify(shown.indexOf("Rat-1") !== -1)
+    verify(shown.toLowerCase().indexOf("paused") === -1)
+    verify(shown.toLowerCase().indexOf("12 seconds ago") === -1)
+    refuteBusyCopy(shown)
   }
 
-  function test_emptyRoomWithRosterDataMissingIsNotACityEmptyClaim() {
+  function test_emptyRoomWithRosterDataMissingWaitsWithoutCityClaims() {
     subject.connectionState = "live"
     subject.hasReport = true
     subject.hasPublicRoom = true
     subject.roomFresh = true
     subject.scores = []
-    compare(subject.rosterMessage, "No roster data in this report.")
-    verify(subject.rosterMessage.toLowerCase().indexOf("no active public rooms") === -1)
-    verify(joinedText().toLowerCase().indexOf("no active public rooms") === -1)
+    compare(subject.visibleRows.length, 0)
+    compare(subject.rosterMessage, "Waiting for game data")
+    verify(joinedText().indexOf("Waiting for game data") !== -1)
+    refuteBusyCopy()
   }
 
   function test_longNamesWrapAtWordBoundariesInsteadOfEliding() {
@@ -274,7 +334,7 @@ TestCase {
     subject.hasReport = true
     subject.hasPublicRoom = true
     subject.scores = [
-      { name: longName, kills: 1, deaths: 0 },
+      { id: "rd-ai-00", name: longName, kills: 1, deaths: 0 },
       { name: "Ada", kills: 2, deaths: 1 }
     ]
     tryVerify(function() {
@@ -289,6 +349,44 @@ TestCase {
     var rows = findChildrenByName(subject, "rosterRow")
     verify(rows.length === 2)
     verify(rows[0].height >= names[0].implicitHeight)
+    tryVerify(function() { return rows[1].y >= rows[0].y + rows[0].height }, 1000)
+    var kinds = findChildrenByName(subject, "rosterKind")
+    verify(kinds[0].visible)
+    verify(kinds[0].x >= names[0].x + names[0].width)
+    verify(kinds[0].x + kinds[0].width <= kinds[0].parent.width)
     verify(joinedText().indexOf(longName) !== -1)
+    refuteBusyCopy()
+  }
+
+  function test_labelsRecognizedBotAndHumanIdsOnly() {
+    subject.width = 406
+    subject.assignmentId = "chain-of-custody"
+    subject.connectionState = "live"
+    subject.hasReport = true
+    subject.hasPublicRoom = true
+    subject.scores = [
+      { id: "rd-ai-00", name: "Constable Alley", points: 1, target: 3, kills: 2, deaths: 1, holder: true },
+      { id: "2c1a0b8e-4d3f-4a91-9c2e-7b6a5d4c3e21", name: "Ada", points: 2, target: 3, kills: 4, deaths: 2 },
+      { id: "legacy-score", name: "Marlowe", points: 0, target: 3, kills: 1, deaths: 1 }
+    ]
+    compare(subject.kindText(subject.scores[0]), "bot")
+    compare(subject.kindText(subject.scores[1]), "human")
+    compare(subject.kindText(subject.scores[2]), "")
+    tryVerify(function() {
+      var kinds = findChildrenByName(subject, "rosterKind")
+      var visible = 0
+      for (var i = 0; i < kinds.length; i++) if (kinds[i].visible) visible++
+      return visible === 2
+    }, 1000)
+    var shown = joinedText()
+    verify(shown.indexOf("bot") !== -1)
+    verify(shown.indexOf("human") !== -1)
+    verify(shown.indexOf("BOT") === -1)
+    verify(shown.indexOf("HUMAN") === -1)
+    verify(shown.indexOf("AI") === -1)
+    verify(shown.indexOf("CASE") !== -1)
+    verify(shown.indexOf("2/3") !== -1)
+    verify(shown.indexOf("4 / 2") !== -1)
+    verify(subject.implicitHeight < 500)
   }
 }

@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import "../StatusModel.js" as StatusModel
 
 Column {
   id: root
@@ -9,6 +10,7 @@ Column {
   property string assignmentId: ""
   property string caseHolderName: ""
   property string connectionState: "loading"
+  property bool suppressWaiting: false
   property bool requestRunning: false
   property bool lastRequestFailed: false
   property bool hasReport: false
@@ -23,33 +25,19 @@ Column {
   property string fontFamily: Style.font.family
 
   readonly property int rosterBound: 10
-  readonly property string sectionTitle: "ROUND ROSTER"
-  readonly property string publicScopeNote: "Public rooms only; private playtests are excluded."
   readonly property bool showObjective: {
     var id = String(assignmentId || "")
     return id === "chain-of-custody" || id === "jurisdiction" || id === "excessive-force"
   }
   readonly property var visibleRows: boundScores(scores)
-  readonly property bool selectedRoomStale: hasPublicRoom && !roomFresh
-  readonly property string freshnessText: {
-    if (requestRunning && lastRequestFailed) return "Retrying the city desk…"
-    if (connectionState === "unavailable") return "The Dispatch desk is unavailable."
-    if (!hasReport || connectionState === "loading") return "Loading…"
-    if (selectedRoomStale || connectionState === "stale")
-      return "Last report " + ageLabel(localObservedAt) + ". Clocks are paused."
-    if (connectionState === "empty") return "Live"
-    if (connectionState === "live") return "Live · " + ageLabel(localObservedAt)
-    return ""
-  }
   readonly property string rosterMessage: {
     if (visibleRows.length > 0) return ""
-    if (!hasReport || connectionState === "loading" || connectionState === "unavailable") return ""
-    if (connectionState === "empty" || !hasPublicRoom) return ""
-    return "No roster data in this report."
+    if (suppressWaiting || connectionState === "unavailable") return ""
+    return "Waiting for game data"
   }
 
   width: parent ? parent.width : implicitWidth
-  spacing: tokenSpace(6)
+  spacing: tokenSpace(4)
 
   function tokenSpace(n) {
     return typeof Style.space === "function" ? Style.space(n) : n
@@ -75,14 +63,6 @@ Column {
     var n = Math.floor(Number(count))
     if (!isFinite(n) || n < 0) n = 0
     return n === 1 ? "1 RAT" : n + " RATS"
-  }
-  function ageLabel(stamp) {
-    var now = root.nowMs > 0 ? root.nowMs : Date.now()
-    var seconds = Math.max(0, Math.floor((now - Number(stamp || 0)) / 1000))
-    if (seconds < 5) return "just now"
-    if (seconds < 60) return seconds + " seconds ago"
-    var minutes = Math.floor(seconds / 60)
-    return minutes === 1 ? "1 minute ago" : minutes + " minutes ago"
   }
   function combatText(entry) {
     if (!entry) return "—"
@@ -119,39 +99,25 @@ Column {
   function holderText(entry) {
     return isHolder(entry) ? "CASE" : ""
   }
-
-  Text {
-    objectName: "rosterTitle"
-    width: parent.width
-    textFormat: Text.PlainText
-    text: root.sectionTitle
-    color: root.muted
-    font.family: root.fontFamily
-    font.pixelSize: tokenFont("caption", 11)
-    font.bold: true
-    font.letterSpacing: 1
+  function kindText(entry) {
+    if (!entry) return ""
+    var kind = entry.kind
+    if (kind !== "bot" && kind !== "human")
+      kind = StatusModel.participantKind(entry.id || entry.playerId)
+    if (kind === "bot") return "bot"
+    if (kind === "human") return "human"
+    return ""
   }
 
-  Text {
-    objectName: "rosterFreshness"
-    width: parent.width
-    height: Math.max(implicitHeight, tokenFont("caption", 11) + 2)
-    textFormat: Text.PlainText
-    text: root.freshnessText
-    color: root.muted
-    font.family: root.fontFamily
-    font.pixelSize: tokenFont("caption", 11)
-    wrapMode: Text.Wrap
-    visible: text !== ""
-  }
+  readonly property int holderWidth: tokenSpace(36)
 
   Row {
     objectName: "rosterHeader"
     width: parent.width
-    spacing: tokenSpace(8)
+    spacing: tokenSpace(6)
     visible: root.visibleRows.length > 0
     Text {
-      width: parent.width - combatHeader.width - (root.showObjective ? objectiveHeader.width : 0) - parent.spacing * (root.showObjective ? 2 : 1)
+      width: parent.width - root.holderWidth - combatHeader.width - (root.showObjective ? objectiveHeader.width : 0) - parent.spacing * (root.showObjective ? 3 : 2)
       textFormat: Text.PlainText
       text: "NAME"
       color: root.muted
@@ -160,10 +126,14 @@ Column {
       font.bold: true
       font.letterSpacing: 0.7
     }
+    Item {
+      width: root.holderWidth
+      height: 1
+    }
     Text {
       id: objectiveHeader
       visible: root.showObjective
-      width: visible ? tokenSpace(46) : 0
+      width: visible ? tokenSpace(42) : 0
       textFormat: Text.PlainText
       text: "OBJ"
       color: root.muted
@@ -174,7 +144,7 @@ Column {
     }
     Text {
       id: combatHeader
-      width: tokenSpace(54)
+      width: tokenSpace(48)
       textFormat: Text.PlainText
       text: "K/D"
       color: root.muted
@@ -194,41 +164,79 @@ Column {
       required property int index
       objectName: "rosterRow"
       width: root.width
-      spacing: tokenSpace(8)
+      spacing: tokenSpace(6)
 
       readonly property string displayedName: String(modelData && modelData.name ? modelData.name : "")
+      readonly property string displayedKind: root.kindText(modelData)
       readonly property string displayedObjective: root.objectiveText(modelData)
       readonly property string displayedCombat: root.combatText(modelData)
       readonly property string displayedHolder: root.holderText(modelData)
-      readonly property int nameWidth: Math.max(tokenSpace(80), width - combatCell.width - (root.showObjective ? objectiveCell.width + spacing : 0) - (holderMark.visible ? holderMark.implicitWidth + spacing : 0) - spacing)
+      readonly property int leftWidth: Math.max(tokenSpace(80), width - combatCell.width - root.holderWidth - (root.showObjective ? objectiveCell.width : 0) - spacing * (root.showObjective ? 3 : 2))
 
-      Text {
-        id: nameCell
-        objectName: "rosterName"
-        width: rosterRow.nameWidth
-        textFormat: Text.PlainText
-        text: rosterRow.displayedName
-        color: root.foreground
-        font.family: root.fontFamily
-        font.pixelSize: tokenFont("body", 13)
-        font.bold: rosterRow.displayedHolder !== ""
-        wrapMode: Text.Wrap
+      Item {
+        id: nameGroup
+        width: rosterRow.leftWidth
+        height: Math.max(nameCell.implicitHeight, kindMark.visible ? kindMark.implicitHeight : 0)
+
+        TextMetrics {
+          id: nameMetrics
+          font: nameCell.font
+          text: nameCell.text
+        }
+
+        Row {
+          id: nameRow
+          width: parent.width
+          height: parent.height
+          spacing: tokenSpace(6)
+
+          Text {
+            id: nameCell
+            objectName: "rosterName"
+            width: {
+              var tag = kindMark.visible ? Math.ceil(kindMark.implicitWidth) + nameRow.spacing : 0
+              var budget = Math.max(1, nameRow.width - tag)
+              var needed = Math.ceil(Math.max(nameMetrics.advanceWidth, nameMetrics.width)) + 2
+              return Math.min(needed, budget)
+            }
+            textFormat: Text.PlainText
+            text: rosterRow.displayedName
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: tokenFont("body", 13)
+            font.bold: rosterRow.displayedHolder !== ""
+            wrapMode: Text.Wrap
+            elide: Text.ElideNone
+          }
+          Text {
+            id: kindMark
+            objectName: "rosterKind"
+            visible: rosterRow.displayedKind !== ""
+            textFormat: Text.PlainText
+            text: rosterRow.displayedKind
+            color: root.muted
+            font.family: root.fontFamily
+            font.pixelSize: tokenFont("caption", 11)
+            font.weight: Font.Normal
+          }
+        }
       }
       Text {
         id: holderMark
         objectName: "rosterHolder"
-        visible: rosterRow.displayedHolder !== ""
+        width: root.holderWidth
         textFormat: Text.PlainText
         text: rosterRow.displayedHolder
         color: root.accent
         font.family: root.fontFamily
         font.pixelSize: tokenFont("caption", 11)
         font.bold: true
+        horizontalAlignment: Text.AlignRight
       }
       Text {
         id: objectiveCell
         visible: root.showObjective
-        width: visible ? tokenSpace(46) : 0
+        width: visible ? tokenSpace(42) : 0
         textFormat: Text.PlainText
         text: rosterRow.displayedObjective
         color: root.foreground
@@ -238,7 +246,7 @@ Column {
       }
       Text {
         id: combatCell
-        width: tokenSpace(54)
+        width: tokenSpace(48)
         textFormat: Text.PlainText
         text: rosterRow.displayedCombat
         color: root.muted
@@ -259,16 +267,5 @@ Column {
     font.pixelSize: tokenFont("body", 13)
     wrapMode: Text.Wrap
     visible: text !== ""
-  }
-
-  Text {
-    objectName: "rosterScope"
-    width: parent.width
-    textFormat: Text.PlainText
-    text: root.publicScopeNote
-    color: root.muted
-    font.family: root.fontFamily
-    font.pixelSize: tokenFont("caption", 11)
-    wrapMode: Text.Wrap
   }
 }

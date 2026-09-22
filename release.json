@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "id": "co.animasai.rat-detective",
-  "version": "1.2.0",
-  "contentHash": "53e8ac0b7bed24bfaa6f3b0c79527c8f613ba916ab597ebd229d61a6391939ab",
+  "version": "1.3.0",
+  "contentHash": "043da1a25e19e982060bd63eb53cb0abaf775de46f52a77a45f98ff1fdfc8c33",
   "files": {
     ".github/workflows/validate.yml": {
-      "sha256": "69cc497deb6393ae348c28ea076b62a688ddd5b26c610d3bf1747a2331f4386d",
+      "sha256": "b71fd61b977e1c9c75903de363f3b6988fbef8954c36bbff8eab149f72e9f601",
       "executable": false
     },
     "assets/badge.webp": {
@@ -41,7 +41,7 @@
       "executable": false
     },
     "BarWidget.qml": {
-      "sha256": "77f90afbcda352cac603c82924b3c3d7f8f27b388a8ff90d692ca718afa03137",
+      "sha256": "0e7b65bc9bbfe1c42ca0beaf3071f1c48dec72cdead6845eb23154a714263c34",
       "executable": false
     },
     "components/DispatchAppearance.qml": {
@@ -57,7 +57,7 @@
       "executable": false
     },
     "components/DispatchRoster.qml": {
-      "sha256": "f01499e11cb5d2886880b67771efb77968bce57edd6a5af10b228350f9acd9f8",
+      "sha256": "f4098c36500a785bd95b8b47f38f31a35b10d34e95d3c0c8037f36ca058a5033",
       "executable": false
     },
     "components/DispatchStateBadge.qml": {
@@ -65,11 +65,47 @@
       "executable": false
     },
     "components/DispatchStepper.qml": {
-      "sha256": "7c172600244e7c100999cca893b7b2738f24dc28ffb49d1f01a67e5e3c59f34c",
+      "sha256": "c6b520a822dd9a29d9da00789f6ac1b769f0c95d740609ed5ebf96b86d606fe4",
+      "executable": false
+    },
+    "components/HighlightsWindow.qml": {
+      "sha256": "b9024fa4fa8fa8f6bb6c031320d60a5169716901dca49849d93e3b3e853797aa",
+      "executable": false
+    },
+    "components/HighlightTimeline.qml": {
+      "sha256": "dfb53dddf2c7fb76df69ccfffbf44feee8690ad4f2581b012998d34b4ff898a8",
+      "executable": false
+    },
+    "connector/content.js": {
+      "sha256": "586dcfa21e23247a598dd63aa9778ca604f38f377a47f80588a643d9a942bdcf",
+      "executable": false
+    },
+    "connector/manifest.json": {
+      "sha256": "0e2f290eaa09a4ad510497a09f653d74459887cf2df30ca32dc2d3e831fdc34e",
+      "executable": false
+    },
+    "connector/native-host.json": {
+      "sha256": "20a1913e19f33eeead5e5c9e2f7f850750118f4153c5d4ff9a2ca31287937a3e",
+      "executable": false
+    },
+    "connector/README.md": {
+      "sha256": "58d4139d5991d1f938808c7f09016200a09d9efbfdaf97a7dee60b1ca12ad603",
+      "executable": false
+    },
+    "connector/release.json": {
+      "sha256": "cd2bb3c8c7e4adf74138050c40c5e56f49cd2cb8d8769a2b02e34899aa14baba",
+      "executable": false
+    },
+    "connector/service-worker.js": {
+      "sha256": "d30bed01720b4e3f48119bb9cebfbb8ba1f45e33ef85ce08496c972ea1f61aa5",
       "executable": false
     },
     "fixtures/dispatch.json": {
       "sha256": "a3c595996548a2993942b261a8bb5a4d7f8498891a5d4b3af82b83935f103037",
+      "executable": false
+    },
+    "HighlightsModel.js": {
+      "sha256": "66a9699c81632c78686f1724b17b861851c2b5ad194ec14fed4c53e7dde9fd13",
       "executable": false
     },
     "icon.png": {
@@ -81,11 +117,11 @@
       "executable": false
     },
     "manifest.json": {
-      "sha256": "29114e072050f607ec5c6d9ef9263b91e3f646e7dabdd3dc6159ffbcc087efd8",
+      "sha256": "e01e0bd5e5f342cf092f7cd3083043487c573137f4dea98b350d3748bc7a607c",
       "executable": false
     },
     "Panel.qml": {
-      "sha256": "ff7f4f353a1ba3398e2a6d114c0feeb4f2fa63509ec787526a7706aac7e5ccfb",
+      "sha256": "f57f5ebbb425954fbc19dc1c6b5b8507ad83ce69bd5a30411180cbf5940ee162",
       "executable": false
     },
     "preview.png": {
@@ -93,15 +129,95 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "040ce71844f380d7d9e0c2c27981c38cb209cf1e0545b0c778a0df97a46f50bd",
+      "sha256": "06b8524585c93e898c9f01ef3fe7faa0260e762dc648984dbbcd0a266a21ce7e",
+      "executable": false
+    },
+    "scripts/highlights/__init__.py": {
+      "sha256": "e6e5bf33f997df5b1e89b1a870c13b44ec1949cad2ddb9508e58e281eebf010e",
+      "executable": false
+    },
+    "scripts/highlights/audio.py": {
+      "sha256": "5041804d5ddc160f0d5069bc35a462b18ac656cf8c9f450e33034ce18a509013",
+      "executable": false
+    },
+    "scripts/highlights/capture.py": {
+      "sha256": "1e1a3da5e37d7e7c830590133f530091099684f6d79351754d202712e816f442",
+      "executable": false
+    },
+    "scripts/highlights/clock.py": {
+      "sha256": "770ceefdd87c29bfa2554686918e003876e3c15313fb2bb070dd47b87298856c",
+      "executable": false
+    },
+    "scripts/highlights/export_options.py": {
+      "sha256": "fc3faf9fb7e7c39e1f2bfb15055f9424a14d9ced9e1cdd92ec6532bd74e388af",
+      "executable": false
+    },
+    "scripts/highlights/export.py": {
+      "sha256": "ca2f84592ca2d2f0954733fc974e4fc7f4de3ad900f99fa084d10eec02238372",
+      "executable": false
+    },
+    "scripts/highlights/framing.py": {
+      "sha256": "2b43d1368f8ca51d754a7051e2bb12716e621a07ff69dbe3bb707bd32537ee9c",
+      "executable": false
+    },
+    "scripts/highlights/identity.py": {
+      "sha256": "b7b1f91443cb9fd7d9fe69f01e2018955f22d9b93bc0161db792afd6c9d93d72",
+      "executable": false
+    },
+    "scripts/highlights/library.py": {
+      "sha256": "40e6546268bbf1bc4b2cf793376107b572a11a1c6bc04c05cd0b716dc4a3844c",
+      "executable": false
+    },
+    "scripts/highlights/media.py": {
+      "sha256": "37c80296bd0baf40bba3e9d99f2ad79ac43eb571780e7f2ade23b787a8c2e8e4",
+      "executable": false
+    },
+    "scripts/highlights/paths.py": {
+      "sha256": "d6d797c0674a0b7449db0edacad00389140956efe82d8810dd97c55abfe84876",
+      "executable": false
+    },
+    "scripts/highlights/protocol.py": {
+      "sha256": "432387e9c4526a144e8943fbec99688d49cab71857ad677fdf46c714a75ee864",
+      "executable": false
+    },
+    "scripts/highlights/redact.py": {
+      "sha256": "f9b706196db75c79786ca5869396d574d7e714d6326124cc943b314d153173c1",
+      "executable": false
+    },
+    "scripts/highlights/reel.py": {
+      "sha256": "0fcf1fcc2303f1131b7d2978f23db6382ceb26fab647be29467b6250cdcc4596",
+      "executable": false
+    },
+    "scripts/highlights/scheduler.py": {
+      "sha256": "e18f4d2f9daa80e5cdb26bcd096a5b5a2d98315e1309040c94abc423fd846f9d",
+      "executable": false
+    },
+    "scripts/highlights/service.py": {
+      "sha256": "b2f86501fd5b3632ee71a2e9fc0f0beee8e37423b9548eccf3cba2875dddc8b3",
+      "executable": false
+    },
+    "scripts/highlights/tuning.py": {
+      "sha256": "c00d962ad950847147a6e5c248aee3026e45eaabf96d9ead11d2db6d67f29998",
+      "executable": false
+    },
+    "scripts/highlights-preview.py": {
+      "sha256": "7d4efd5f6798525d625ce390ad535c6d0d2825e1d80bea0a42a21f3d4ae19ba8",
       "executable": false
     },
     "scripts/install-webapp.sh": {
-      "sha256": "f4f7f8e8a95530b5f14e773dac10b7d93bfbebcfb79a20a0d08d1eb606983519",
+      "sha256": "54b24ede39dce0c39e5c307c3681ba48e749157cf1763ce0d9edde2608187fc4",
       "executable": true
     },
     "scripts/rat-detective-desktop.py": {
-      "sha256": "bf0228d0016e4b500e3378bce62eac53e05ae04b00ea306bd5960188bc092051",
+      "sha256": "d0290e9f9d8abfb6015bfbf20a044facce3ad9b3af29e1f167ecd04ce71ab0e2",
+      "executable": true
+    },
+    "scripts/rat-detective-highlights.py": {
+      "sha256": "991a1de6c99359ec84ae432dedd6727a34acf93571aac8bfb46128510bde022e",
+      "executable": true
+    },
+    "scripts/rat-detective-native-host.py": {
+      "sha256": "d91ca27e2018607dab900c932180f0101ad746c5c60f847d4ea14b5d4e0f1a1f",
       "executable": true
     },
     "scripts/rollback-webapp.sh": {
@@ -109,11 +225,11 @@
       "executable": true
     },
     "scripts/uninstall-webapp.sh": {
-      "sha256": "843a5ace8b65ae2d012e71a9883cac8a06f59fe793143b62d229754e725d1f5a",
+      "sha256": "bf5e0f306e8b2393abc7711f737b79643ff04107935e27be2fc6b13b69a12562",
       "executable": true
     },
     "Service.qml": {
-      "sha256": "955b57b88e93263a4507fb6e3c6d04078777a45ac18ae3ea4094ed33e20a37e3",
+      "sha256": "7a563b97cb47c5502a3ca81c52b50f836a18a727c1cc41d40430bf3e981180dc",
       "executable": false
     },
     "ServiceBridge.js": {
@@ -121,7 +237,11 @@
       "executable": false
     },
     "StatusModel.js": {
-      "sha256": "e8b32031bbf287e38f8e677e626efeea3dc4103fb0ab076d019c7e093fa9fafa",
+      "sha256": "74cfe321480a7090a3676da6ff1eca438627e143967adf55de0ea36e11c12977",
+      "executable": false
+    },
+    "tests/highlights-model.test.mjs": {
+      "sha256": "670d8b54bed1d99f9a73e789ad0c96908caba46ac120471fb2b818dbf6e9e6f9",
       "executable": false
     },
     "tests/qml/stubs/qs/Commons/Color.qml": {
@@ -144,12 +264,20 @@
       "sha256": "3bc94a48b300e6b872ff18f5fcd62140c913f56535327adef43ff7abf03d8e4b",
       "executable": false
     },
+    "tests/qml/tst_highlight_timeline.qml": {
+      "sha256": "11faae47dc14e3592f2fa19b5ff875da25908f5f6994ceeee985839b67a711b6",
+      "executable": false
+    },
+    "tests/qml/tst_highlights.qml": {
+      "sha256": "af413c8dd0e0aeeb488c86c5888cae4b67073151dfde75ecb3826fc44a489035",
+      "executable": false
+    },
     "tests/qml/tst_roster.qml": {
-      "sha256": "aa2dc00e480c30426b0adc17c5e6830c4cf7667107665936d4af49970616f112",
+      "sha256": "130cbfd75f902fcc586e5d1e1236f3e8d14e4921e1dda9794107112a2dfc526b",
       "executable": false
     },
     "tests/run": {
-      "sha256": "322d77ab0f05d9daea23e60e24d7c1df853530ffd7b58ead8c32c774d1b00080",
+      "sha256": "351f6e5658058ed413d0084866fb6a309eab682e5e43a05fd5e6d6a918294985",
       "executable": true
     },
     "tests/run-qml": {
@@ -157,7 +285,7 @@
       "executable": true
     },
     "tests/status-model.test.mjs": {
-      "sha256": "49ed4d7c8c633dc6a0bf075ee19de0882dd4fbaa5c9320f9212433a0521c58b9",
+      "sha256": "639666942fdb5cabd46220d662ae172d9220abca3f84dff0522d9fe96705c74f",
       "executable": false
     }
   }
