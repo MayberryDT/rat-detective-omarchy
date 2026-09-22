@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "co.animasai.rat-detective",
-  "version": "1.3.0",
-  "contentHash": "5374fab8a8c5f251abda01d04d6f4dc5c4c51226f0f89aa8c53b7387d6cd51ee",
+  "version": "1.3.1",
+  "contentHash": "dc233d405d868d4ae0879ced28a51d41d8258719fce444a01fec83e04ff53efa",
   "files": {
     ".github/workflows/validate.yml": {
       "sha256": "64d0b9d64957b04a863535f894d6b0233ffb2c37a0e56b959b4d9e39d9f9fbae",
@@ -76,27 +76,27 @@
       "sha256": "dfb53dddf2c7fb76df69ccfffbf44feee8690ad4f2581b012998d34b4ff898a8",
       "executable": false
     },
-    "connector/content.js": {
+    "connector/extension/content.js": {
       "sha256": "586dcfa21e23247a598dd63aa9778ca604f38f377a47f80588a643d9a942bdcf",
       "executable": false
     },
-    "connector/manifest.json": {
+    "connector/extension/manifest.json": {
       "sha256": "0e2f290eaa09a4ad510497a09f653d74459887cf2df30ca32dc2d3e831fdc34e",
       "executable": false
     },
-    "connector/native-host.json": {
+    "connector/extension/native-host.json": {
       "sha256": "20a1913e19f33eeead5e5c9e2f7f850750118f4153c5d4ff9a2ca31287937a3e",
       "executable": false
     },
-    "connector/README.md": {
+    "connector/extension/README.md": {
       "sha256": "58d4139d5991d1f938808c7f09016200a09d9efbfdaf97a7dee60b1ca12ad603",
       "executable": false
     },
-    "connector/release.json": {
+    "connector/extension/release.json": {
       "sha256": "cd2bb3c8c7e4adf74138050c40c5e56f49cd2cb8d8769a2b02e34899aa14baba",
       "executable": false
     },
-    "connector/service-worker.js": {
+    "connector/extension/service-worker.js": {
       "sha256": "d30bed01720b4e3f48119bb9cebfbb8ba1f45e33ef85ce08496c972ea1f61aa5",
       "executable": false
     },
@@ -117,7 +117,7 @@
       "executable": false
     },
     "manifest.json": {
-      "sha256": "e01e0bd5e5f342cf092f7cd3083043487c573137f4dea98b350d3748bc7a607c",
+      "sha256": "72f6c82a16ca3af439353bbb3b0ca35be2ebe4257c56174198b3cbc06ac057ed",
       "executable": false
     },
     "Panel.qml": {
@@ -129,7 +129,7 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "06b8524585c93e898c9f01ef3fe7faa0260e762dc648984dbbcd0a266a21ce7e",
+      "sha256": "41237de58bca5bdb77a920b907865be65f000b902b78dbe537db20d0c5370e61",
       "executable": false
     },
     "scripts/highlights/__init__.py": {
@@ -205,7 +205,7 @@
       "executable": false
     },
     "scripts/install-webapp.sh": {
-      "sha256": "54b24ede39dce0c39e5c307c3681ba48e749157cf1763ce0d9edde2608187fc4",
+      "sha256": "6420bf3e8136bbf64b9b7f8a7ff2c471a47e7a72b8c89de6177fd1d8dd5ac02b",
       "executable": true
     },
     "scripts/rat-detective-desktop.py": {

@@ -4,7 +4,7 @@ A desktop companion for [Rat Detective](https://ratdetective.online/), the brows
 shooter about rats, paperwork and ricocheting cheese. The game runs in your browser;
 the companion shows a compact public scoreboard.
 
-Version **1.3.0** keeps the compact live-scoreboard panel and adds opt-in
+Version **1.3.1** keeps the compact live-scoreboard panel and adds opt-in
 automatic highlights: a compact Clips entry, explicit setup, and a separate
 library window for playback, trim, favorites and exports. Capture stays off
 until enabled and is bounded to the recognized Rat Detective app window.
@@ -64,7 +64,7 @@ Install the published plugin repository:
 omarchy plugin add https://github.com/MayberryDT/rat-detective-omarchy.git --enable
 ```
 
-That command installs the current **1.3.0** release. Existing installations can
+That command installs the current **1.3.1** release. Existing installations can
 use the update command below; saved appearance, alert and highlight settings are
 kept.
 
@@ -121,7 +121,7 @@ The public companion feed lists public rooms only. Private playtest fixtures are
 excluded. Reading the directory does not start gameplay, reserve slots or wake
 a GameRoom. The canonical `public-live-v2` city remains active with its current
 six-to-nine-bot round roster when no humans are present; humans join on top until
-the ten-rat cap. Overflow rooms still sleep. The native panel and exact 1.3.0
+the ten-rat cap. Overflow rooms still sleep. The native panel and exact 1.3.1
 package were verified against the live service before release.
 
 The gathering notification remains off until enabled and keeps the existing

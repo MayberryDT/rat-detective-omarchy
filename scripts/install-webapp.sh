@@ -51,7 +51,9 @@ for folder in dests:
     (folder / "co.animasai.rat_detective_highlights.json").write_text(payload)
 PY
 CONNECTOR_SRC=""
-if [[ -d $PLUGIN_DIR/connector ]]; then
+if [[ -d $PLUGIN_DIR/connector/extension ]]; then
+  CONNECTOR_SRC="$PLUGIN_DIR/connector/extension"
+elif [[ -d $PLUGIN_DIR/connector ]]; then
   CONNECTOR_SRC="$PLUGIN_DIR/connector"
 elif [[ -d $PLUGIN_DIR/../extension ]]; then
   CONNECTOR_SRC="$PLUGIN_DIR/../extension"
