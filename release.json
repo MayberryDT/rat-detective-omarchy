@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "id": "co.animasai.rat-detective",
-  "version": "1.3.1",
-  "contentHash": "dc233d405d868d4ae0879ced28a51d41d8258719fce444a01fec83e04ff53efa",
+  "version": "1.3.2",
+  "contentHash": "78111f0f4b41e96ca2613cf7c2b12ea35ba9fa114adf820875a8117aad6ba65b",
   "files": {
     ".github/workflows/validate.yml": {
-      "sha256": "64d0b9d64957b04a863535f894d6b0233ffb2c37a0e56b959b4d9e39d9f9fbae",
+      "sha256": "c0a2814df69bb593bc82e6a07ac3c16241dd4bedcd35391140ccbc6691456e6a",
       "executable": false
     },
     "assets/badge.webp": {
@@ -117,7 +117,7 @@
       "executable": false
     },
     "manifest.json": {
-      "sha256": "72f6c82a16ca3af439353bbb3b0ca35be2ebe4257c56174198b3cbc06ac057ed",
+      "sha256": "b1b786e0d18ac73f179b902ba0a52a845a507ef798b037357e359bd3f07f03b7",
       "executable": false
     },
     "Panel.qml": {
@@ -129,7 +129,11 @@
       "executable": false
     },
     "README.md": {
-      "sha256": "41237de58bca5bdb77a920b907865be65f000b902b78dbe537db20d0c5370e61",
+      "sha256": "6feaa3c6f092e4058e6f1b7dee220f3629e5de938e4c12f07af92f1a8a4b503a",
+      "executable": false
+    },
+    "scripts/bounded-dispatch-fetch.py": {
+      "sha256": "8eaf9d2020161a21cc62312fe1e5391c8d890d1088562e80682acd38d3e6152c",
       "executable": false
     },
     "scripts/highlights/__init__.py": {
@@ -229,7 +233,7 @@
       "executable": true
     },
     "Service.qml": {
-      "sha256": "7a563b97cb47c5502a3ca81c52b50f836a18a727c1cc41d40430bf3e981180dc",
+      "sha256": "96923155812c7c8a3160a9c44b15d1e071dd14682f5dd2048fedc4b9e110ada4",
       "executable": false
     },
     "ServiceBridge.js": {
@@ -238,6 +242,10 @@
     },
     "StatusModel.js": {
       "sha256": "74cfe321480a7090a3676da6ff1eca438627e143967adf55de0ea36e11c12977",
+      "executable": false
+    },
+    "tests/dispatch-fetch.e2e.py": {
+      "sha256": "4c3567e1f65211044ac3beb3dbc838807deca9de3ed2f2c8fd9489d2b9fec4c8",
       "executable": false
     },
     "tests/highlights-model.test.mjs": {
@@ -277,7 +285,7 @@
       "executable": false
     },
     "tests/run": {
-      "sha256": "351f6e5658058ed413d0084866fb6a309eab682e5e43a05fd5e6d6a918294985",
+      "sha256": "b16e0d48c7f88150594b46009be37c58d6ada6520981dccd7f07131f67793292",
       "executable": true
     },
     "tests/run-qml": {
